@@ -338,7 +338,8 @@ void	mdp3_dsi_cmd_dma_busy_wait(struct msm_fb_data_type *mfd)
 
 	if (need_wait) {
 		/* wait until DMA finishes the current job */
-		wait_for_completion(&mfd->dma->comp);
+		if (!wait_for_completion_timeout(&mfd->dma->comp, HZ/10))
+			pr_err("Wait timedout: %s %d", __func__, __LINE__);
 	}
 }
 #endif
@@ -506,15 +507,29 @@ void mdp_dma2_update(struct msm_fb_data_type *mfd)
 	int need_wait = 0;
 
 	down(&mfd->dma->mutex);
-	if ((mfd) && (mfd->panel_power_on)) {
+	if ((mfd) && (mfd->panel_power_on) && mfd->is_panel_alive) {
 		down(&mfd->sem);
 		spin_lock_irqsave(&mdp_spin_lock, flag);
 		if (mfd->dma->busy == TRUE)
 			need_wait++;
 		spin_unlock_irqrestore(&mdp_spin_lock, flag);
 
-		if (need_wait)
-			wait_for_completion_killable(&mfd->dma->comp);
+		if (need_wait) {
+			if (wait_for_completion_killable_timeout(
+						&mfd->dma->comp, HZ/10) <= 0) {
+				spin_lock_irqsave(&mdp_spin_lock, flag);
+				mfd->dma->busy = FALSE;
+				spin_unlock_irqrestore(&mdp_spin_lock, flag);
+				mdp_disable_irq(MDP_DMA2_TERM);
+				mdp_pipe_ctrl(MDP_DMA2_BLOCK,
+						MDP_BLOCK_POWER_OFF, FALSE);
+				up(&mfd->sem);
+				up(&mfd->dma->mutex);
+				pr_err("Timedout DMA: %s %d",
+						__func__, __LINE__);
+				return;
+			}
+		}
 
 		/* schedule DMA to start */
 		mdp_pipe_ctrl(MDP_CMD_BLOCK, MDP_BLOCK_POWER_ON, FALSE);
@@ -659,11 +674,17 @@ void mdp_dma_pan_update(struct fb_info *info)
 		/* we need to wait for the pending update */
 		mfd->pan_waiting = TRUE;
 		if (!mfd->ibuf_flushed) {
-			wait_for_completion_killable(&mfd->pan_comp);
+			if (wait_for_completion_killable_timeout(&mfd->pan_comp,
+									HZ/10))
+				pr_err("Timedout DMA: %s %d", __func__,
+								__LINE__);
 		}
 		/* waiting for this update to complete */
 		mfd->pan_waiting = TRUE;
-		wait_for_completion_killable(&mfd->pan_comp);
+		if (wait_for_completion_killable_timeout(&mfd->pan_comp,
+								HZ/10) <= 10)
+				pr_err("Timedout DMA: %s %d", __func__,
+								__LINE__);
 	} else
 		mfd->dma_fnc(mfd);
 }

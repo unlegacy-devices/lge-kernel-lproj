@@ -2289,7 +2289,8 @@ ssize_t mdp_dma_show_event(struct device *dev,
 
 	INIT_COMPLETION(vsync_cntrl.vsync_wait);
 
-	wait_for_completion(&vsync_cntrl.vsync_wait);
+	if (!wait_for_completion_timeout(&vsync_cntrl.vsync_wait, HZ/10))
+		pr_err("Timedout Vsync: %s %d", __func__, __LINE__);
 	ret = snprintf(buf, PAGE_SIZE, "VSYNC=%llu",
 			ktime_to_ns(vsync_cntrl.vsync_time));
 	buf[strlen(buf) + 1] = '\0';
@@ -2431,6 +2432,27 @@ void mdp_update_pm(struct msm_fb_data_type *mfd, ktime_t pre_vsync)
 	activate_event_timer(mfd->cpu_pm_hdl, wakeup_time);
 }
 
+void cmd_wait4dmap(struct msm_fb_data_type *mfd)
+{
+	int need_wait = 0;
+	unsigned long flag;
+
+	spin_lock_irqsave(&mdp_spin_lock, flag);
+	if (mfd->dma->busy == TRUE)
+		need_wait = 1;
+	spin_unlock_irqrestore(&mdp_spin_lock, flag);
+
+	if (need_wait) {
+		if (!wait_for_completion_timeout(&mfd->dma->comp, HZ/10)) {
+			mfd->dma->busy = FALSE;
+			mdp_pipe_ctrl(MDP_DMA2_BLOCK, MDP_BLOCK_POWER_OFF,
+								FALSE);
+			mdp_disable_irq(MDP_DMA2_TERM);
+			pr_err("DMA timedout: %s %i", __func__, __LINE__);
+		}
+	}
+}
+
 static DEFINE_SPINLOCK(mdp_lock);
 static int mdp_irq_mask;
 static int mdp_irq_enabled;
@@ -2513,7 +2535,9 @@ void mdp_pipe_kickoff(uint32 term, struct msm_fb_data_type *mfd)
 		mdp_ppp_waiting = TRUE;
 		spin_unlock_irqrestore(&mdp_spin_lock, flag);
 		outpdw(MDP_BASE + 0x30, 0x1000);
-		wait_for_completion_killable(&mdp_ppp_comp);
+		if (wait_for_completion_killable_timeout(&mdp_ppp_comp,
+								HZ/10) <= 0)
+			pr_err("Timedout PPP: %s %d", __func__, __LINE__);
 		mdp_disable_irq(term);
 
 		if (mdp_debug[MDP_PPP_BLOCK]) {
@@ -3016,7 +3040,7 @@ irqreturn_t mdp_isr(int irq, void *ptr)
 			mdp_pipe_ctrl(MDP_DMA2_BLOCK, MDP_BLOCK_POWER_OFF,
 				TRUE);
 			mdp_disable_irq_nosync(MDP_DMA2_TERM);
-			complete(&dma->comp);
+			complete_all(&dma->comp);
 		}
 #endif
 	}
@@ -3841,6 +3865,7 @@ static int mdp_probe(struct platform_device *pdev)
 		INIT_WORK(&mfd->vsync_resync_worker,
 			  mdp_vsync_resync_workqueue_handler);
 		mfd->hw_refresh = FALSE;
+		mfd->wait4dmap = NULL;
 
 		if (mfd->panel.type == MDDI_PANEL)
 			mdp4_mddi_rdptr_init(0);
@@ -3953,12 +3978,14 @@ static int mdp_probe(struct platform_device *pdev)
 			mfd->cursor_update = mdp_hw_cursor_sync_update;
 		else
 			mfd->cursor_update = mdp_hw_cursor_update;
+		mfd->wait4dmap = NULL;
 		break;
 
 	case MIPI_CMD_PANEL:
 #ifndef CONFIG_FB_MSM_MDP303
 		mfd->dma_fnc = mdp4_dsi_cmd_overlay;
 		mipi = &mfd->panel_info.mipi;
+		mfd->wait4dmap = NULL;
 		mfd->vsync_init = mdp4_dsi_rdptr_init;
 		mfd->vsync_show = mdp4_dsi_cmd_show_event;
 		if (mfd->panel_info.pdest == DISPLAY_1) {
@@ -3980,6 +4007,7 @@ static int mdp_probe(struct platform_device *pdev)
 		spin_unlock_irqrestore(&mdp_spin_lock, flag);
 		mdp_pipe_ctrl(MDP_CMD_BLOCK, MDP_BLOCK_POWER_OFF, FALSE);
 #else
+		mfd->wait4dmap = cmd_wait4dmap;
 		mfd->dma_fnc = mdp_dma2_update;
 // LGE_CHANGE_S, sohyun.nam@lge.com
 #ifndef CONFIG_LGE_FB_MSM_MDP_LUT_ENABLE
@@ -4009,6 +4037,7 @@ static int mdp_probe(struct platform_device *pdev)
 	case DTV_PANEL:
 		mfd->vsync_init = mdp4_dtv_vsync_init;
 		mfd->vsync_show = mdp4_dtv_show_event;
+		mfd->wait4dmap = NULL;
 		pdata->on = mdp4_dtv_on;
 		pdata->off = mdp4_dtv_off;
 		mfd->hw_refresh = TRUE;
@@ -4028,6 +4057,7 @@ static int mdp_probe(struct platform_device *pdev)
 		pdata->on = mdp_lcdc_on;
 		pdata->off = mdp_lcdc_off;
 #endif
+		mfd->wait4dmap = NULL;
 		mfd->hw_refresh = TRUE;
 #if	defined(CONFIG_FB_MSM_OVERLAY) && defined(CONFIG_FB_MSM_MDP40)
 		mfd->cursor_update = mdp_hw_cursor_sync_update;
@@ -4071,12 +4101,14 @@ static int mdp_probe(struct platform_device *pdev)
 #if defined(CONFIG_FB_MSM_OVERLAY) && defined(CONFIG_FB_MSM_TVOUT)
 		pdata->on = mdp4_atv_on;
 		pdata->off = mdp4_atv_off;
+		mfd->wait4dmap = NULL;
 		mfd->dma_fnc = mdp4_atv_overlay;
 		mfd->dma = &dma_e_data;
 		mdp4_display_intf_sel(EXTERNAL_INTF_SEL, TV_INTF);
 #else
 		pdata->on = mdp_dma3_on;
 		pdata->off = mdp_dma3_off;
+		mfd->wait4dmap = NULL;
 		mfd->hw_refresh = TRUE;
 		mfd->dma_fnc = mdp_dma3_update;
 		mfd->dma = &dma3_data;
@@ -4087,6 +4119,7 @@ static int mdp_probe(struct platform_device *pdev)
 	case WRITEBACK_PANEL:
 		{
 			unsigned int mdp_version;
+			mfd->wait4dmap = NULL;
 			mdp_pipe_ctrl(MDP_CMD_BLOCK, MDP_BLOCK_POWER_ON,
 						 FALSE);
 			mdp_version = inpdw(MDP_BASE + 0x0);

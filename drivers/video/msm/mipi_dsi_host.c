@@ -40,6 +40,7 @@
 #include "mdp4.h"
 
 static struct completion dsi_dma_comp;
+static struct completion dsi_bta_comp;
 static struct completion dsi_mdp_comp;
 static struct completion dsi_video_comp;
 static struct dsi_buf dsi_tx_buf;
@@ -92,6 +93,7 @@ void mipi_dsi_mdp_stat_inc(int which)
 void mipi_dsi_init(void)
 {
 	init_completion(&dsi_dma_comp);
+	init_completion(&dsi_bta_comp);
 	init_completion(&dsi_mdp_comp);
 	init_completion(&dsi_video_comp);
 	mipi_dsi_buf_alloc(&dsi_tx_buf, DSI_BUF_SIZE);
@@ -1010,11 +1012,12 @@ void mipi_dsi_op_mode_config(int mode)
 	if (mode == DSI_VIDEO_MODE) {
 		dsi_ctrl |= 0x03;
 		intr_ctrl = (DSI_INTR_CMD_DMA_DONE_MASK |
-					DSI_INTR_VIDEO_DONE_MASK);
+					DSI_INTR_VIDEO_DONE_MASK | DSI_INTR_BTA_DONE_MASK);
 	} else {		/* command mode */
 		dsi_ctrl |= 0x05;
 		intr_ctrl = DSI_INTR_CMD_DMA_DONE_MASK | DSI_INTR_ERROR_MASK |
-				DSI_INTR_CMD_MDP_DONE_MASK;
+				DSI_INTR_CMD_MDP_DONE_MASK |
+				DSI_INTR_BTA_DONE_MASK;
 	}
 
 	pr_debug("%s: dsi_ctrl=%x intr=%x\n", __func__, dsi_ctrl, intr_ctrl);
@@ -1054,7 +1057,8 @@ void mipi_dsi_mdp_busy_wait(struct msm_fb_data_type *mfd)
 		/* wait until DMA finishes the current job */
 		pr_debug("%s: pending pid=%d\n",
 				__func__, current->pid);
-		wait_for_completion(&dsi_mdp_comp);
+		if (!wait_for_completion_timeout(&dsi_mdp_comp, HZ/10))
+			pr_err("Wait timedout: %s %i", __func__, __LINE__);
 	}
 	pr_debug("%s: done pid=%d\n",
 				__func__, current->pid);
@@ -1091,6 +1095,26 @@ void mipi_dsi_cmd_bta_sw_trigger(void)
 	mipi_dsi_ack_err_status();
 
 	pr_debug("%s: BTA done, cnt=%d\n", __func__, cnt);
+}
+
+int mipi_dsi_wait_for_bta_ack(void)
+{
+	int ret = 0;
+	unsigned long flag;
+
+	spin_lock_irqsave(&dsi_mdp_lock, flag);
+	INIT_COMPLETION(dsi_bta_comp);
+	mipi_dsi_enable_irq(DSI_BTA_TERM);
+	spin_unlock_irqrestore(&dsi_mdp_lock, flag);
+	MIPI_OUTP(MIPI_DSI_BASE + 0x094, 0x01);	/* trigger */
+	wmb();
+	ret = wait_for_completion_killable_timeout(&dsi_bta_comp, HZ/10);
+	if (ret <= 0) {
+		mipi_dsi_disable_irq(DSI_BTA_TERM);
+		pr_err("DSI BTA error: %s %i", __func__, __LINE__);
+	}
+
+	return ret;
 }
 
 static char set_tear_on[2] = {0x35, 0x00};
@@ -1495,7 +1519,13 @@ int mipi_dsi_cmd_dma_tx(struct dsi_buf *tp)
 	wmb();
 	spin_unlock_irqrestore(&dsi_mdp_lock, flags);
 
-	wait_for_completion(&dsi_dma_comp);
+	if (!wait_for_completion_timeout(&dsi_dma_comp, HZ/10)) {
+		pr_err("Wait timedout: %s %i", __func__, __LINE__);
+		spin_lock_irqsave(&dsi_mdp_lock, flags);
+		dsi_ctrl_lock = FALSE;
+		spin_unlock_irqrestore(&dsi_mdp_lock, flags);
+		mipi_dsi_disable_irq(DSI_CMD_TERM);
+	}
 
 	dma_unmap_single(&dsi_dev, tp->dmap, tp->len, DMA_TO_DEVICE);
 	tp->dmap = 0;
@@ -1553,8 +1583,16 @@ void mipi_dsi_cmd_mdp_busy(void)
 	}
 	spin_unlock_irqrestore(&dsi_mdp_lock, flags);
 
-	if (need_wait)
-		wait_for_completion(&dsi_mdp_comp);
+	if (need_wait) {
+		if (!wait_for_completion_timeout(&dsi_mdp_comp, HZ/10)) {
+			pr_err("Wait timedout: %s %i", __func__, __LINE__);
+			spin_lock_irqsave(&dsi_mdp_lock, flags);
+			dsi_ctrl_lock = FALSE;
+			dsi_mdp_busy = FALSE;
+			spin_unlock_irqrestore(&dsi_mdp_lock, flags);
+			mipi_dsi_disable_irq(DSI_MDP_TERM);
+		}
+	}
 }
 
 /*
@@ -1806,6 +1844,12 @@ irqreturn_t mipi_dsi_isr(int irq, void *ptr)
 		spin_unlock(&dsi_mdp_lock);
 	}
 
+	if (isr & DSI_INTR_BTA_DONE) {
+		spin_lock(&dsi_mdp_lock);
+		complete(&dsi_bta_comp);
+		mipi_dsi_disable_irq_nosync(DSI_BTA_TERM);
+		spin_unlock(&dsi_mdp_lock);
+	}
 
 	return IRQ_HANDLED;
 }

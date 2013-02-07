@@ -682,10 +682,16 @@ static void mipi_nt35510_set_backlight(struct msm_fb_data_type *mfd)
 	}
 }
 
+static int mipi_NT35510_check_live_status(struct msm_fb_data_type *mfd)
+{
+	return mipi_dsi_wait_for_bta_ack();
+}
+
 static struct msm_fb_panel_data nt35510_panel_data = {
 	.on	= mipi_nt35510_lcd_on,
 	.off = mipi_nt35510_lcd_off,
 	.set_backlight = mipi_nt35510_set_backlight,
+	.check_live_status = mipi_NT35510_check_live_status,
 };
 
 static int ch_used[3];

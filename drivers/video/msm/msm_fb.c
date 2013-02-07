@@ -63,6 +63,8 @@ static struct msm_fb_data_type *local_mfd=0;
 // LGE_CHANGE_E, sohyun.nam@lge.com
 
 static unsigned char *fbram;
+static void mipi_dsi_check_live_status(struct work_struct *work);
+static void mipi_dsi_reset_display(struct work_struct *work);
 static unsigned char *fbram_phys;
 static int fbram_size;
 static boolean bf_supported;
@@ -660,6 +662,8 @@ static int msm_fb_probe(struct platform_device *pdev)
 	pdev_list[pdev_list_cnt++] = pdev;
 	msm_fb_create_sysfs(pdev);
         msm_fb_resolution_sysfs(pdev);
+	INIT_DELAYED_WORK(&mfd->panel_live_status, mipi_dsi_check_live_status);
+	INIT_WORK(&mfd->display_reset, mipi_dsi_reset_display);
 
 // LGE_CHANGE_S, sohyun.nam@lge.com
 #ifdef CONFIG_LGE_FB_MSM_MDP_LUT_ENABLE
@@ -1192,6 +1196,9 @@ static int msm_fb_blank_sub(int blank_mode, struct fb_info *info,
 			if (ret == 0) {
 				mfd->panel_power_on = TRUE;
                                 mfd->panel_driver_on = mfd->op_enable;
+                                mfd->is_panel_alive = TRUE;
+                                schedule_delayed_work(&mfd->panel_live_status,
+					msecs_to_jiffies(5000));
 			}
 		}
 		break;
@@ -1207,7 +1214,7 @@ static int msm_fb_blank_sub(int blank_mode, struct fb_info *info,
 			mfd->op_enable = FALSE;
 			curr_pwr_state = mfd->panel_power_on;
 			mfd->panel_power_on = FALSE;
-			cancel_delayed_work_sync(&mfd->backlight_worker);
+			cancel_delayed_work_sync(&mfd->panel_live_status);
 			bl_updated = 0;
 
 			msleep(16);
@@ -1410,6 +1417,88 @@ static int msm_fb_mmap(struct fb_info *info, struct vm_area_struct * vma)
 		return -EAGAIN;
 
 	return 0;
+}
+
+DEFINE_SEMAPHORE(msm_fb_pan_sem);
+DEFINE_SEMAPHORE(msm_fb_ioctl_ppp_sem);
+DEFINE_MUTEX(msm_fb_ioctl_lut_sem);
+
+static void mipi_dsi_reset_display(struct work_struct *work)
+{
+	struct msm_fb_data_type *mfd = container_of(work,
+				struct msm_fb_data_type, display_reset);
+	struct msm_fb_panel_data *pdata =
+		(struct msm_fb_panel_data *)mfd->pdev->dev.platform_data;
+	int temp_level = 0;
+
+	down(&msm_fb_pan_sem);
+	down(&msm_fb_ioctl_ppp_sem);
+	mutex_lock(&msm_fb_ioctl_lut_sem);
+	down(&mfd->sem);
+	bl_updated = 0;
+	temp_level = mfd->bl_level;
+	mfd->bl_level = 0;
+	if (pdata && pdata->set_backlight)
+		pdata->set_backlight(mfd);
+	up(&mfd->sem);
+	msm_fb_blank_sub(FB_BLANK_POWERDOWN, mfd->fbi, mfd->op_enable);
+	msleep(50);
+	msm_fb_blank_sub(FB_BLANK_UNBLANK, mfd->fbi, mfd->op_enable);
+	msleep(20);
+
+	if (mdp_rev <= MDP_REV_303)
+		mdp_dma_pan_update(mfd->fbi);
+
+	if (!unset_bl_level)
+		unset_bl_level = temp_level;
+	schedule_delayed_work(&mfd->backlight_worker, backlight_duration);
+	mutex_unlock(&msm_fb_ioctl_lut_sem);
+	up(&msm_fb_ioctl_ppp_sem);
+	up(&msm_fb_pan_sem);
+}
+
+static void mipi_dsi_check_live_status(struct work_struct *work)
+{
+	struct msm_fb_data_type *mfd = container_of(to_delayed_work(work),
+				struct msm_fb_data_type, panel_live_status);
+	struct msm_fb_panel_data *pdata = mfd->pdev->dev.platform_data;
+	int ret = 1;
+
+	if ((pdata) && (pdata->check_live_status)) {
+		if (mdp_rev >= MDP_REV_41)
+			mutex_lock(&mfd->dma->ov_mutex);
+		else
+			down(&mfd->dma->mutex);
+
+		/* In MDP 3.03 for command mode panels, we return pan display
+		 * IOCTL on vsync interrupt. So, after vsync interrupt comes
+		 * and when DMA_P is in progress, if the panel stops responding
+		 * and if we trigger BTA before DMA_P finishes, then the DSI
+		 * FIFO will not be cleared since the DSI data bus control
+		 * doesn't come back to the host after BTA. This may cause the
+		 * display reset not to be proper. Hence, wait for DMA_P done
+		 * for command mode panels before triggering BTA.
+		 */
+		if (mfd->wait4dmap)
+			mfd->wait4dmap(mfd);
+
+		ret = pdata->check_live_status(mfd);
+
+		if (ret <= 0)
+			mfd->is_panel_alive = FALSE;
+
+		if (mdp_rev >= MDP_REV_41)
+			mutex_unlock(&mfd->dma->ov_mutex);
+		else
+			up(&mfd->dma->mutex);
+
+		if (mfd->is_panel_alive == FALSE)
+			schedule_work(&mfd->display_reset);
+
+		if (mfd->panel_power_on && ret > 0)
+			schedule_delayed_work(&mfd->panel_live_status,
+					msecs_to_jiffies(5000));
+	}
 }
 
 static struct fb_ops msm_fb_ops = {
@@ -2127,7 +2216,6 @@ void msm_fb_release_timeline(struct msm_fb_data_type *mfd)
 	mutex_unlock(&mfd->sync_mutex);
 }
 
-DEFINE_SEMAPHORE(msm_fb_pan_sem);
 static int msm_fb_pan_idle(struct msm_fb_data_type *mfd)
 {
 	int ret = 0;
@@ -3733,9 +3821,7 @@ static int msmfb_mixer_info(struct fb_info *info, unsigned long *argp)
 
 #endif
 
-DEFINE_SEMAPHORE(msm_fb_ioctl_ppp_sem);
 DEFINE_SEMAPHORE(msm_fb_ioctl_vsync_sem);
-DEFINE_MUTEX(msm_fb_ioctl_lut_sem);
 
 /* Set color conversion matrix from user space */
 
