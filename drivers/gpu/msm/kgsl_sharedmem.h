@@ -1,4 +1,4 @@
-/* Copyright (c) 2002,2007-2012, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2002,2007-2012, Code Aurora Forum. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -100,13 +100,8 @@ static inline void *kgsl_sg_alloc(unsigned int sglen)
 {
 	if ((sglen * sizeof(struct scatterlist)) <  PAGE_SIZE)
 		return kzalloc(sglen * sizeof(struct scatterlist), GFP_KERNEL);
-	else {
-		void *ptr = vmalloc(sglen * sizeof(struct scatterlist));
-		if (ptr)
-			memset(ptr, 0, sglen * sizeof(struct scatterlist));
-
-		return ptr;
-	}
+	else
+		return vmalloc(sglen * sizeof(struct scatterlist));
 }
 
 static inline void kgsl_sg_free(void *ptr, unsigned int sglen)
@@ -122,7 +117,7 @@ memdesc_sg_phys(struct kgsl_memdesc *memdesc,
 		unsigned int physaddr, unsigned int size)
 {
 	memdesc->sg = kgsl_sg_alloc(1);
-        if (!memdesc->sg)
+	if (!memdesc->sg)
 		return -ENOMEM;
 
 	kmemleak_not_leak(memdesc->sg);

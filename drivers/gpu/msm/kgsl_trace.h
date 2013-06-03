@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2011-2012, Code Aurora Forum. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -251,6 +251,29 @@ TRACE_EVENT(kgsl_pwrlevel,
 	)
 );
 
+TRACE_EVENT(kgsl_mpdcvs,
+
+	TP_PROTO(struct kgsl_device *device, unsigned int state),
+
+	TP_ARGS(device, state),
+
+	TP_STRUCT__entry(
+		__string(device_name, device->name)
+		__field(unsigned int, state)
+	),
+
+	TP_fast_assign(
+		__assign_str(device_name, device->name);
+		__entry->state = state;
+	),
+
+	TP_printk(
+		"d_name=%s %s",
+		__get_str(device_name),
+		__entry->state ? "BUSY" : "IDLE"
+	)
+);
+
 DECLARE_EVENT_CLASS(kgsl_pwrstate_template,
 	TP_PROTO(struct kgsl_device *device, unsigned int state),
 
@@ -484,7 +507,7 @@ TRACE_EVENT(kgsl_mmu_pagefault,
 	),
 
 	TP_printk(
-		"d_name=%s page=0x%08x pt=%d op=%s",
+		"d_name=%s page=0x%08x pt=%d op=%s\n",
 		__get_str(device_name), __entry->page, __entry->pt,
 		__get_str(op)
 	)

@@ -1,4 +1,4 @@
-/* Copyright (c) 2002,2007-2013, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2002,2007-2012, Code Aurora Forum. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -617,12 +617,6 @@ static void build_regsave_cmds(struct adreno_device *adreno_dev,
 	*cmd++ = REG_TP0_CHICKEN;
 	*cmd++ = tmp_ctx.reg_values[1];
 
-	if (adreno_is_a20x(adreno_dev)) {
-		*cmd++ = cp_type3_packet(CP_REG_TO_MEM, 2);
-		*cmd++ = REG_RB_BC_CONTROL;
-		*cmd++ = tmp_ctx.reg_values[2];
-	}
-
 	if (adreno_is_a22x(adreno_dev)) {
 		unsigned int i;
 		unsigned int j = 2;
@@ -1143,12 +1137,6 @@ static void build_regrestore_cmds(struct adreno_device *adreno_dev,
 	tmp_ctx.reg_values[1] = virt2gpu(cmd, &drawctxt->gpustate);
 	*cmd++ = 0x00000000;
 
-	if (adreno_is_a20x(adreno_dev)) {
-		*cmd++ = cp_type0_packet(REG_RB_BC_CONTROL, 1);
-		tmp_ctx.reg_values[2] = virt2gpu(cmd, &drawctxt->gpustate);
-		*cmd++ = 0x00000000;
-	}
-
 	if (adreno_is_a22x(adreno_dev)) {
 		unsigned int i;
 		unsigned int j = 2;
@@ -1519,7 +1507,7 @@ static void a2xx_drawctxt_save(struct adreno_device *adreno_dev,
 {
 	struct kgsl_device *device = &adreno_dev->dev;
 
-	if (context == NULL || (context->flags & CTXT_FLAGS_BEING_DESTROYED))
+	if (context == NULL)
 		return;
 
 	if (context->flags & CTXT_FLAGS_GPU_HANG)
@@ -1728,14 +1716,8 @@ static void a2xx_cp_intrcallback(struct kgsl_device *device)
 				KGSL_MEMSTORE_OFFSET(KGSL_MEMSTORE_GLOBAL,
 					current_context));
 		if (context_id < KGSL_MEMSTORE_MAX) {
-			/* reset per context ts_cmp_enable */
-			kgsl_sharedmem_writel(&device->memstore,
+			kgsl_sharedmem_writel(&rb->device->memstore,
 					KGSL_MEMSTORE_OFFSET(context_id,
-						ts_cmp_enable), 0);
-			/* Always reset global timestamp ts_cmp_enable */
-			kgsl_sharedmem_writel(&device->memstore,
-					KGSL_MEMSTORE_OFFSET(
-						KGSL_MEMSTORE_GLOBAL,
 						ts_cmp_enable), 0);
 			wmb();
 		}
@@ -1764,9 +1746,6 @@ static void a2xx_cp_intrcallback(struct kgsl_device *device)
 		KGSL_CMD_WARN(rb->device, "ringbuffer ib1/rb interrupt\n");
 		queue_work(device->work_queue, &device->ts_expired_ws);
 		wake_up_interruptible_all(&device->wait_queue);
-		atomic_notifier_call_chain(&(device->ts_notifier_list),
-					   device->id,
-					   NULL);
 	}
 }
 
@@ -1858,7 +1837,7 @@ static void a2xx_rb_init(struct adreno_device *adreno_dev,
 	unsigned int *cmds, cmds_gpu;
 
 	/* ME_INIT */
-	cmds = adreno_ringbuffer_allocspace(rb, NULL, 19);
+	cmds = adreno_ringbuffer_allocspace(rb, 19);
 	cmds_gpu = rb->buffer_desc.gpuaddr + sizeof(uint)*(rb->wptr-19);
 
 	GSL_RB_WRITE(cmds, cmds_gpu, cp_type3_packet(CP_ME_INIT, 18));
@@ -2001,10 +1980,10 @@ static void a2xx_start(struct adreno_device *adreno_dev)
 			0x18000000);
 	}
 
-	if (adreno_is_a20x(adreno_dev))
-		/* For A20X based targets increase number of clocks
-		 * that RBBM will wait before de-asserting Register
-		 * Clock Active signal */
+	if (adreno_is_a203(adreno_dev))
+		/* For A203 increase number of clocks that RBBM
+		 * will wait before de-asserting Register Clock
+		 * Active signal */
 		adreno_regwrite(device, REG_RBBM_CNTL, 0x0000FFFF);
 	else
 		adreno_regwrite(device, REG_RBBM_CNTL, 0x00004442);

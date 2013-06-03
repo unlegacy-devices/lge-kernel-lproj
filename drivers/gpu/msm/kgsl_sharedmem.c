@@ -1,4 +1,4 @@
-/* Copyright (c) 2002,2007-2012, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2002,2007-2012, Code Aurora Forum. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -355,13 +355,9 @@ static void kgsl_page_alloc_free(struct kgsl_memdesc *memdesc)
 		vunmap(memdesc->hostptr);
 		kgsl_driver.stats.vmalloc -= memdesc->size;
 	}
-	if (memdesc->sg) {
-		for_each_sg(memdesc->sg, sg, sglen, i) {
-			if (sg->length == 0)
-				break;
+	if (memdesc->sg)
+		for_each_sg(memdesc->sg, sg, sglen, i)
 			__free_page(sg_page(sg));
-		}
-	}
 }
 
 static int kgsl_contiguous_vmflags(struct kgsl_memdesc *memdesc)
@@ -391,9 +387,9 @@ static int kgsl_page_alloc_map_kernel(struct kgsl_memdesc *memdesc)
 			sglen--;
 
 		/* create a list of pages to call vmap */
-		pages = vmalloc(sglen * sizeof(struct page *));
+		pages = kmalloc(sglen * sizeof(struct page *), GFP_KERNEL);
 		if (!pages) {
-			KGSL_CORE_ERR("vmalloc(%d) failed\n",
+			KGSL_CORE_ERR("kmalloc(%d) failed\n",
 				sglen * sizeof(struct page *));
 			return -ENOMEM;
 		}
@@ -403,7 +399,7 @@ static int kgsl_page_alloc_map_kernel(struct kgsl_memdesc *memdesc)
 					VM_IOREMAP, page_prot);
 		KGSL_STATS_ADD(memdesc->size, kgsl_driver.stats.vmalloc,
 				kgsl_driver.stats.vmalloc_max);
-		vfree(pages);
+		kfree(pages);
 	}
 	if (!memdesc->hostptr)
 		return -ENOMEM;
@@ -476,7 +472,7 @@ static struct kgsl_memdesc_ops kgsl_ebimem_ops = {
 	.free = kgsl_ebimem_free,
 	.vmflags = kgsl_contiguous_vmflags,
 	.vmfault = kgsl_contiguous_vmfault,
-        .map_kernel_mem = kgsl_ebimem_map_kernel,
+	.map_kernel_mem = kgsl_ebimem_map_kernel,
 };
 
 static struct kgsl_memdesc_ops kgsl_coherent_ops = {
@@ -514,25 +510,6 @@ _kgsl_sharedmem_page_alloc(struct kgsl_memdesc *memdesc,
 	struct page **pages = NULL;
 	pgprot_t page_prot = pgprot_writecombine(PAGE_KERNEL);
 	void *ptr;
-	struct sysinfo si;
-
-	/*
-	 * Get the current memory information to be used in deciding if we
-	 * should go ahead with this allocation
-	 */
-
-	si_meminfo(&si);
-
-	/*
-	 * Limit the size of the allocation to the amount of free memory minus
-	 * 32MB. Why 32MB?  Because thats the buffer that page_alloc uses and
-	 * it just seems like a reasonable limit that won't make the OOM killer
-	 * go all serial on us.  Of course, if we are down this low all bets
-	 * are off but above all do no harm.
-	 */
-
-	if (size >= ((si.freeram << PAGE_SHIFT) - SZ_32M))
-		return -ENOMEM;
 
 	/*
 	 * Add guard page to the end of the allocation when the
@@ -547,8 +524,7 @@ _kgsl_sharedmem_page_alloc(struct kgsl_memdesc *memdesc,
 	memdesc->priv = KGSL_MEMFLAGS_CACHED;
 	memdesc->ops = &kgsl_page_alloc_ops;
 
-	memdesc->sglen = sglen;
-	memdesc->sg = kgsl_sg_alloc(memdesc->sglen);
+	memdesc->sg = kgsl_sg_alloc(sglen);
 
 	if (memdesc->sg == NULL) {
 		KGSL_CORE_ERR("vmalloc(%d) failed\n",
@@ -564,8 +540,7 @@ _kgsl_sharedmem_page_alloc(struct kgsl_memdesc *memdesc,
 	 * two pages; well within the acceptable limits for using kmalloc.
 	 */
 
-	pages = kmalloc(memdesc->sglen * sizeof(struct page *),
-		GFP_KERNEL);
+	pages = kmalloc(sglen * sizeof(struct page *), GFP_KERNEL);
 
 	if (pages == NULL) {
 		KGSL_CORE_ERR("kmalloc (%d) failed\n",
@@ -576,7 +551,8 @@ _kgsl_sharedmem_page_alloc(struct kgsl_memdesc *memdesc,
 
 	kmemleak_not_leak(memdesc->sg);
 
-	sg_init_table(memdesc->sg, memdesc->sglen);
+	memdesc->sglen = sglen;
+	sg_init_table(memdesc->sg, sglen);
 
 	for (i = 0; i < PAGE_ALIGN(size) / PAGE_SIZE; i++) {
 
@@ -589,6 +565,7 @@ _kgsl_sharedmem_page_alloc(struct kgsl_memdesc *memdesc,
 			__GFP_NOWARN | __GFP_NORETRY);
 		if (pages[i] == NULL) {
 			ret = -ENOMEM;
+			memdesc->sglen = i;
 			goto done;
 		}
 

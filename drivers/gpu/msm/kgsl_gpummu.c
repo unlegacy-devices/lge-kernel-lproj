@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2011-2012, Code Aurora Forum. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -686,7 +686,6 @@ kgsl_gpummu_map(void *mmu_specific_pt,
 
 static void kgsl_gpummu_stop(struct kgsl_mmu *mmu)
 {
-	kgsl_regwrite(mmu->device, MH_MMU_CONFIG, 0x00000000);
 	mmu->flags &= ~KGSL_FLAGS_STARTED;
 }
 

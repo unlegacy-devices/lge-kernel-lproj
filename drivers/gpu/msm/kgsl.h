@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2012, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2008-2012, Code Aurora Forum. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -22,6 +22,8 @@
 #include <linux/cdev.h>
 #include <linux/regulator/consumer.h>
 #include <linux/mm.h>
+
+#include <mach/kgsl.h>
 
 #define KGSL_NAME "kgsl"
 
@@ -171,6 +173,7 @@ struct kgsl_mem_entry {
 #endif
 
 void kgsl_mem_entry_destroy(struct kref *kref);
+int kgsl_postmortem_dump(struct kgsl_device *device, int manual);
 
 struct kgsl_mem_entry *kgsl_get_mem_entry(unsigned int ptbase,
 		unsigned int gpuaddr, unsigned int size);

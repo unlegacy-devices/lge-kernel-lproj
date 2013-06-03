@@ -1,4 +1,4 @@
-/* Copyright (c) 2002,2007-2012, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2002,2007-2012, Code Aurora Forum. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -320,7 +320,7 @@ unsigned int kgsl_mmu_get_ptsize(void)
 	if (KGSL_MMU_TYPE_GPU == kgsl_mmu_type)
 		return CONFIG_MSM_KGSL_PAGE_TABLE_SIZE;
 	else if (KGSL_MMU_TYPE_IOMMU == kgsl_mmu_type)
-		return SZ_2G;
+		return SZ_2G - KGSL_PAGETABLE_BASE;
 	else
 		return 0;
 }
@@ -527,8 +527,7 @@ struct kgsl_pagetable *kgsl_mmu_getpagetable(unsigned long name)
 		return (void *)(-1);
 
 #ifndef CONFIG_KGSL_PER_PROCESS_PAGE_TABLE
-	if (!(cpu_is_msm8625q() && (get_ddr_size() > SZ_512M)))
-		name = KGSL_MMU_GLOBAL_PT;
+	name = KGSL_MMU_GLOBAL_PT;
 #endif
 	pt = kgsl_get_pagetable(name);
 
@@ -548,7 +547,7 @@ void kgsl_setstate(struct kgsl_mmu *mmu, unsigned int context_id,
 			uint32_t flags)
 {
 	struct kgsl_device *device = mmu->device;
-        struct adreno_device *adreno_dev = ADRENO_DEVICE(device);
+	struct adreno_device *adreno_dev = ADRENO_DEVICE(device);
 
 	if (!(flags & (KGSL_MMUFLAGS_TLBFLUSH | KGSL_MMUFLAGS_PTUPDATE))
 		&& !adreno_is_a2xx(adreno_dev))
