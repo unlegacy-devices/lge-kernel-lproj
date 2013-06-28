@@ -1581,7 +1581,7 @@ config MSM7X27A_OVERCLOCK
 
 config MSM7X27A_BACONMAKER
 	bool "Enable SoC overclocking to dangerous frequencies"
-	depends on MSM7X27_OVERCLOCK
+	depends on MSM7X27A_OVERCLOCK
 	default n
 	help
 	  Enable support for dangerous msm7x27A acpuclock frequencies/voltages.
