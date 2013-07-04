@@ -467,6 +467,15 @@ static struct clkctl_acpu_speed pll0_960_pll1_737_pll2_1200_pll4_1008[] = {
 	{ 0, 504000, ACPU_PLL_4, 6, 1, 63000, 3, 6, 160000 },
 	{ 1, 600000, ACPU_PLL_2, 2, 1, 75000, 3, 6, 160000 },
 	{ 1, 1008000, ACPU_PLL_4, 6, 0, 126000, 3, 7, 200000},
+#ifdef CONFIG_MSM7X27A_OVERCLOCK
+    	{ 1, 1100000, ACPU_PLL_2, 2, 0, 137500, 3, 7, 200000 },
+	{ 1, 1150000, ACPU_PLL_2, 2, 0, 143750, 3, 7, 200000 },
+    	{ 1, 1200000, ACPU_PLL_2, 2, 0, 150000, 3, 7, 200000 },	
+#ifdef CONFIG_MSM7X27A_BACONMAKER
+    	{ 1, 1250000, ACPU_PLL_2, 2, 0, 156250, 3, 7, 200000 },
+    	{ 1, 1300000, ACPU_PLL_2, 2, 0, 162500, 3, 7, 200000 },
+#endif
+#endif
 	{ 0 }
 };
 
@@ -651,7 +660,7 @@ static void acpuclk_set_div(const struct clkctl_acpu_speed *hunt_s)
         udelay(50);
 	}
 	#endif
-	#ifdef CONFIG_MACH_MSM7X25A_U0
+	#ifdef CONFIG_MACH_MSM7X27A_U0
 	a11_div=hunt_s->a11clk_src_div;
         if(hunt_s->a11clk_khz>1008000) {
         a11_div=0;
@@ -1018,7 +1027,7 @@ ssize_t acpuclk_get_vdd_levels_str(char *buf) {
 			len += sprintf(buf + len, "%8u: %8d\n", pll0_960_pll1_245_pll2_1200_pll4_800[i].a11clk_khz, pll0_960_pll1_245_pll2_1200_pll4_800[i].vdd);
 		}
 		#endif
-		#ifdef CONFIG_MACH_MSM7X25A_U0
+		#ifdef CONFIG_MACH_MSM7X27A_U0
 		for (i = 0; pll0_960_pll1_245_pll2_1200_pll4_1008[i].a11clk_khz; i++) {
 			/* updated to use uv required by 7x27 architecture - nAa */
 			if (pll0_960_pll1_245_pll2_1200_pll4_1008[i].use_for_scaling)
@@ -1041,7 +1050,7 @@ void acpuclk_set_vdd(unsigned int khz, int vdd_uv) {
 			pll0_960_pll1_245_pll2_1200_pll4_800[i].vdd = vdd_uv;
 	}
 	#endif
-	#ifdef CONFIG_MACH_MSM7X25A_U0
+	#ifdef CONFIG_MACH_MSM7X27A_U0
 	for (i = 0; pll0_960_pll1_245_pll2_1200_pll4_1008[i].a11clk_khz; i++) {
 		if ( pll0_960_pll1_245_pll2_1200_pll4_1008[i].a11clk_khz == khz)
 			pll0_960_pll1_245_pll2_1200_pll4_1008[i].vdd = vdd_uv;
