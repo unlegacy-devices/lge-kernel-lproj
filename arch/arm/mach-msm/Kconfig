@@ -1586,6 +1586,13 @@ config MSM7X27A_BACONMAKER
 	help
 	  Enable support for dangerous msm7x27A acpuclock frequencies/voltages.
 
+config MSM7X27A_UNDERVOLT
+	bool "Enable stock freq undervolt for MSM7x27A"
+        depends on MACH_MSM7X25A_M4 || MACH_MSM7X27A_U0
+	default n
+	help
+	  Enable Undervolting of the default max freq
+
 endif # CPU_FREQ_MSM
 
 config MSM_CPU_AVS
