@@ -700,7 +700,7 @@ static struct zv_hdr *zv_create(struct zs_pool *pool, uint32_t pool_id,
 	struct zv_hdr *zv;
 	u32 size = clen + sizeof(struct zv_hdr);
 	int chunks = (size + (CHUNK_SIZE - 1)) >> CHUNK_SHIFT;
-	unsigned long handle = 0;
+	void *handle = NULL;
 
 	BUG_ON(!irqs_disabled());
 	BUG_ON(chunks >= NCHUNKS);
@@ -721,7 +721,7 @@ out:
 	return handle;
 }
 
-static void zv_free(struct zs_pool *pool, unsigned long handle)
+static void zv_free(struct zs_pool *pool, void *handle)
 {
 	unsigned long flags;
 	struct zv_hdr *zv;
@@ -743,7 +743,7 @@ static void zv_free(struct zs_pool *pool, unsigned long handle)
 	local_irq_restore(flags);
 }
 
-static void zv_decompress(struct page *page, unsigned long handle)
+static void zv_decompress(struct page *page, void *handle)
 {
 	unsigned int clen = PAGE_SIZE;
 	char *to_va;
@@ -1247,7 +1247,7 @@ static int zcache_pampd_get_data(char *data, size_t *bufsize, bool raw,
 	int ret = 0;
 
 	BUG_ON(is_ephemeral(pool));
-	zv_decompress((struct page *)(data), (unsigned long)pampd);
+	zv_decompress((struct page *)(data), pampd);
 	return ret;
 }
 
@@ -1282,7 +1282,7 @@ static void zcache_pampd_free(void *pampd, struct tmem_pool *pool,
 		atomic_dec(&zcache_curr_eph_pampd_count);
 		BUG_ON(atomic_read(&zcache_curr_eph_pampd_count) < 0);
 	} else {
-		zv_free(cli->zspool, (unsigned long)pampd);
+		zv_free(cli->zspool, pampd);
 		atomic_dec(&zcache_curr_pers_pampd_count);
 		BUG_ON(atomic_read(&zcache_curr_pers_pampd_count) < 0);
 	}
