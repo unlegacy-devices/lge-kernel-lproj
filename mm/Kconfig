@@ -380,7 +380,6 @@ config CLEANCACHE
 
 	  If unsure, say Y to enable cleancache
 
-<<<<<<< HEAD
 config DYNAMIC_PAGE_WRITEBACK
 	bool "Dynamically manage the dirty page writebacks during suspend/resume"
 	default n
@@ -389,7 +388,7 @@ config DYNAMIC_PAGE_WRITEBACK
 	  when the system is suspended and when the system has been resumed.
 
 	  If unsure, say N to disable this feature
-=======
+
 config FRONTSWAP
 	bool "Enable frontswap to cache swap pages if tmem is present"
 	depends on SWAP
@@ -406,4 +405,4 @@ config FRONTSWAP
 	  and swap data is stored as normal on the matching swap device.
 
 	  If unsure, say Y to enable frontswap.
->>>>>>> mm: frontswap: config and doc files
+
