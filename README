@@ -1,3 +1,8 @@
+Optimus l7 p700	- cyanogenmod_u0_defconfig 
+	   p708	- cyanogenmod_u0_8m_defonfig (8mp camera variant)
+	   p705 - cyanogenmod_u0_nonfc_defconfig (no nfc variant)
+Optimus L5 e610 - cyanogenmod_m4_defconfig
+	
 	Linux kernel release 3.x <http://kernel.org/>
 
 These are the release notes for Linux version 3.  Read them carefully,
