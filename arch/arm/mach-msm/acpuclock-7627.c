@@ -1058,7 +1058,6 @@ ssize_t acpuclk_get_vdd_levels_str(char *buf) {
 
 void acpuclk_set_vdd(unsigned int khz, int vdd_uv) {
 	int i;
-	printk(KERN_ERR"acpuclk_set_vdd khz: %d, vdd_uv: %d\n", khz, vdd_uv);
 	mutex_lock(&drv_state.lock);
 	#ifdef CONFIG_MACH_MSM7X25A_M4
 	for (i = 0; pll0_960_pll1_245_pll2_1200_pll4_800[i].a11clk_khz; i++) {
