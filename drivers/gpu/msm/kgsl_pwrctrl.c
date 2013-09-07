@@ -1026,7 +1026,7 @@ void kgsl_idle_check(struct work_struct *work)
 			}
 		}
 	} else if (device->state & (KGSL_STATE_HUNG |
-					KGSL_STATE_DUMP_AND_FT)) {
+					KGSL_STATE_DUMP_AND_RECOVER)) {
 		kgsl_pwrctrl_request_state(device, KGSL_STATE_NONE);
 	}
 
@@ -1065,7 +1065,7 @@ void kgsl_pre_hwaccess(struct kgsl_device *device)
 		break;
 	case KGSL_STATE_INIT:
 	case KGSL_STATE_HUNG:
-	case KGSL_STATE_DUMP_AND_FT:
+	case KGSL_STATE_DUMP_AND_RECOVER:
 		if (test_bit(KGSL_PWRFLAGS_CLK_ON,
 					 &device->pwrctrl.power_flags))
 			break;
@@ -1089,9 +1089,9 @@ void kgsl_check_suspended(struct kgsl_device *device)
 		mutex_unlock(&device->mutex);
 		wait_for_completion(&device->hwaccess_gate);
 		mutex_lock(&device->mutex);
-	} else if (device->state == KGSL_STATE_DUMP_AND_FT) {
+	} else if (device->state == KGSL_STATE_DUMP_AND_RECOVER) {
 		mutex_unlock(&device->mutex);
-		wait_for_completion(&device->ft_gate);
+		wait_for_completion(&device->recovery_gate);
 		mutex_lock(&device->mutex);
 	} else if (device->state == KGSL_STATE_SLUMBER)
 		kgsl_pwrctrl_wake(device);
@@ -1265,9 +1265,8 @@ void kgsl_pwrctrl_wake(struct kgsl_device *device)
 		/* Re-enable HW access */
 		mod_timer(&device->idle_timer,
 				jiffies + device->pwrctrl.interval_timeout);
-		if (device->pwrctrl.restore_slumber == false)
-			pm_qos_update_request(&device->pm_qos_req_dma,
-						GPU_SWFI_LATENCY);
+		pm_qos_update_request(&device->pm_qos_req_dma,
+					GPU_SWFI_LATENCY);
 	case KGSL_STATE_ACTIVE:
 		kgsl_pwrctrl_request_state(device, KGSL_STATE_NONE);
 		break;
@@ -1331,7 +1330,7 @@ const char *kgsl_pwrstate_to_str(unsigned int state)
 		return "SUSPEND";
 	case KGSL_STATE_HUNG:
 		return "HUNG";
-	case KGSL_STATE_DUMP_AND_FT:
+	case KGSL_STATE_DUMP_AND_RECOVER:
 		return "DNR";
 	case KGSL_STATE_SLUMBER:
 		return "SLUMBER";
