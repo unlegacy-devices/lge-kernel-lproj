@@ -226,7 +226,7 @@ static struct proccomm_regulator_info msm7x27a_pcom_vreg_info[] = {
 	PCOM_VREG_SMP(smps2,  4, NULL,  1100000,  1100000, 0, -1, 0, 0, 0, 0, s),	// msmc2
 	PCOM_VREG_SMP(smps3,  2, NULL,  1800000,  1800000, 0, -1, 0, 0, 0, 0, s),	// msme1, emmc
 	PCOM_VREG_SMP(smps4, 24, NULL,  2100000,  2100000, 0, -1, 0, 0, 0, 0, s),	// rf
-	PCOM_VREG_LDO(ldo01, 12, NULL,  1800000,  3300000, 0, -1, 0, 0, 0, 0, p),	// rfrx1 /* <2011-12-21><sinjo.mattappallil@lge.com><lcd is operating at 1.8v> */
+	PCOM_VREG_LDO(ldo01, 12, NULL,  1600000,  3200000, 0, -1, 0, 0, 0, 0, p),	// rfrx1 /* 
 	PCOM_VREG_LDO(ldo02, 13, NULL,  2050000,  2850000, 0, -1, 0, 0, 0, 0, p),	// rfrx2 /* min (2850000 -> 2050000) */
 	PCOM_VREG_LDO(ldo03, 49, NULL,  1200000,  1200000, 0, -1, 0, 0, 0, 0, n),  // mddi
 	PCOM_VREG_LDO(ldo04, 50, NULL,  1100000,  1100000, 0, -1, 0, 0, 0, 0, n),	// pllx
