@@ -361,7 +361,7 @@ CC		= $(srctree)/scripts/gcc-wrapper.py $(REAL_CC)
 CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF)
 ifdef CONFIG_LINARO
-MODFLAGS	= -mcpu=cortex-a5 -mtune=cortex-a5 -march=armv7-a -mfpu=neon-vfpv4 -funsafe-math-optimizations -funsafe-loop-optimizations
+MODFLAGS	= -mvectorize-with-neon-quad -ftree-vectorize -funsafe-math-optimizations -funsafe-loop-optimizations
 else
 MODFLAGS	=
 endif

@@ -8,7 +8,7 @@
 # asflags-y := -DDEBUG
 
 ifdef CONFIG_LINARO
-KBUILD_AFLAGS   :=$(KBUILD_AFLAGS:-msoft-float=-Wa,-mfpu=neon-vfpv4 -funsafe-math-optimizations -funsafe-loop-optimizations)
+KBUILD_AFLAGS   :=$(KBUILD_AFLAGS:-msoft-float=-Wa,-mfpu=neon -mvectorize-with-neon-quad -ftree-vectorize  -funsafe-math-optimizations -funsafe-loop-optimizations)
 else
 KBUILD_AFLAGS	:=$(KBUILD_AFLAGS:-msoft-float=-Wa,-mfpu=neon)
 endif
