@@ -59,7 +59,7 @@ comma = ,
 # macro, but instead defines a whole series of macros which makes
 # testing for a specific architecture or later rather impossible.
 ifdef CONFIG_LINARO
-arch-$(CONFIG_CPU_32v7)         :=-D__LINUX_ARM_ARCH__=7 $(call cc-option,-march=armv7-a -mfpu=neon -mvectorize-with-neon-quad -ftree-vectorize  -funsafe-math-optimizations -funsafe-loop-optimizations,-march=armv7-a -Wa$(comma)-march=armv7-a)
+arch-$(CONFIG_CPU_32v7)    :=-D__LINUX_ARM_ARCH__=7 $(call cc-option,-mcpu=cortex-a5 -march=armv7-a -mfpu=neon-vfpv4 -ftree-vectorize -Wa$(comma)-march=armv7-a)
 else
 arch-$(CONFIG_CPU_32v7)		:=-D__LINUX_ARM_ARCH__=7 $(call cc-option,-march=armv7-a,-march=armv5t -Wa$(comma)-march=armv7-a)
 endif
