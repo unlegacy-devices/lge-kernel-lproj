@@ -359,7 +359,6 @@ VOS_STATUS WLANTL_ChainFrontPkts
    WLANTL_CbType          *pTLCb
 );
 
-#ifdef ANI_CHIPSET_VOLANS
 /*==========================================================================
  
    FUNCTION    WLANTL_FillReplayCounter
@@ -390,6 +389,5 @@ void WLANTL_FillReplayCounter
    v_U64_t                replayCounter,
    v_U8_t                 ucSlotIndex
 );
-#endif /*ANI_CHIPSET_VOLANS*/
 
 #endif /* #ifndef WLAN_QCT_TLI_H */

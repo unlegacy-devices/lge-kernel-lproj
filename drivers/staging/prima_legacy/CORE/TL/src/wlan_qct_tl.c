@@ -1068,9 +1068,7 @@ WLANTL_RegisterSTAClient
 )
 {
   WLANTL_CbType*  pTLCb = NULL;
-#ifdef ANI_CHIPSET_VOLANS
   v_U8_t    ucTid = 0;/*Local variable to clear previous replay counters of STA on all TIDs*/
-#endif
   /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
 
   /*------------------------------------------------------------------------
@@ -1201,7 +1199,6 @@ WLANTL_RegisterSTAClient
   vos_copy_macaddr( &pTLCb->atlSTAClients[pwSTADescType->ucSTAId].
                  wSTADesc.vSelfMACAddress, &pwSTADescType->vSelfMACAddress);
 
-#ifdef ANI_CHIPSET_VOLANS
   /* In volans release L replay check is done at TL */
   pTLCb->atlSTAClients[pwSTADescType->ucSTAId].ucIsReplayCheckValid = 
     pwSTADescType-> ucIsReplayCheckValid;
@@ -1211,7 +1208,6 @@ WLANTL_RegisterSTAClient
   {
     pTLCb->atlSTAClients[pwSTADescType->ucSTAId].ullReplayCounter[ucTid] =  0;
   }
-#endif
 
   /*--------------------------------------------------------------------
       Set the AC for the registered station to the highest priority AC
@@ -6193,7 +6189,7 @@ WLANTL_STATxAuth
 
   /* This code is to send traffic with lower priority AC when we does not 
      get admitted to send it. Today HAL does not downgrade AC so this code 
-     does not get executed.(In other words, HAL doesn’t change tid. The if 
+     does not get executed.(In other words, HAL doesn\92t change tid. The if 
      statement is always false.)
      NOTE: In the case of LA downgrade occurs in HDD (that was the change 
      Phani made during WMM-AC plugfest). If WM & BMP also took this approach, 
@@ -6700,12 +6696,10 @@ WLANTL_STARxAuth
 #ifdef WLAN_SOFTAP_FEATURE
    v_U8_t*                  STAMetaInfoPtr;
 #endif
-#ifdef ANI_CHIPSET_VOLANS
    v_U8_t                   ucEsf=0; /* first subframe of AMSDU flag */
    v_U64_t                  ullcurrentReplayCounter=0; /*current replay counter*/
    v_U64_t                  ullpreviousReplayCounter=0; /*previous replay counter*/
    v_U16_t                  ucUnicastBroadcastType=0; /*It denotes whether received frame is UC or BC*/
-#endif
   /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
 
   /*------------------------------------------------------------------------
@@ -6740,10 +6734,8 @@ WLANTL_STARxAuth
   ucMPDUHLen    = (v_U8_t)WDA_GET_RX_MPDU_HEADER_LEN(aucBDHeader);
   ucTid         = (v_U8_t)WDA_GET_RX_TID(aucBDHeader);
 
-#ifdef ANI_CHIPSET_VOLANS
   /*Host based replay check is needed for unicast data frames*/
   ucUnicastBroadcastType  = (v_U16_t)WDA_IS_RX_BCAST(aucBDHeader);
-#endif
   if(0 != ucMPDUHLen)
   {
     ucPMPDUHLen = ucMPDUHLen;
@@ -6912,7 +6904,6 @@ WLANTL_STARxAuth
     WLANTL_MSDUReorder( pTLCb, &vosDataBuff, aucBDHeader, ucSTAId, ucTid );
   }
 
-#ifdef ANI_CHIPSET_VOLANS
 if(0 == ucUnicastBroadcastType
 #ifdef FEATURE_ON_CHIP_REORDERING
    && (WLANHAL_IsOnChipReorderingEnabledForTID(pvosGCtx, ucSTAId, ucTid) != TRUE)
@@ -7016,7 +7007,6 @@ if(0 == ucUnicastBroadcastType
 }
 /*It is a broadast packet DPU has already done replay check for 
   broadcast packets no need to do replay check of these packets*/
-#endif /*End of #ifdef ANI_CHIPSET_VOLANS*/
 
   if ( NULL != vosDataBuff )
   {
@@ -10641,7 +10631,6 @@ VOS_STATUS WLANTL_GetSoftAPStatistics(v_PVOID_t pAdapter, WLANTL_TRANSFER_STA_TY
     return vosStatus;
 }
 #endif
-#ifdef ANI_CHIPSET_VOLANS
 /*===============================================================================
   FUNCTION      WLANTL_IsReplayPacket
      
@@ -10732,7 +10721,6 @@ WLANTL_GetReplayCounterFromRxBD
     return ullcurrentReplayCounter;
 #endif
 }
-#endif
 #endif
 
 /*===============================================================================

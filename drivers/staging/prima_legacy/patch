@@ -1,0 +1,782 @@
+diff --git a/CORE/HDD/inc/wlan_hdd_ftm.h b/CORE/HDD/inc/wlan_hdd_ftm.h
+index 9e9290d..b29b8cf 100644
+--- a/CORE/HDD/inc/wlan_hdd_ftm.h
++++ b/CORE/HDD/inc/wlan_hdd_ftm.h
+@@ -105,12 +105,7 @@
+ #define WLAN_FTM_PRIV_SET_NONE_GET_NONE   (SIOCIWFIRSTPRIV + 6)
+ #define WE_SET_NV_DEFAULTS    1
+ 
+-#define WLAN_FTM_PRIV_SET_VAR_INT_GET_NONE   (SIOCIWFIRSTPRIV + 7)
+-#define WE_SET_RSSI_OFFSET 1
+-
+-
+ #define WE_FTM_MAX_STR_LEN 1024
+-#define MAX_FTM_VAR_ARGS  7
+ 
+ #define MAX_NV_TABLE_SIZE  30000
+ 
+diff --git a/CORE/HDD/inc/wlan_hdd_main.h b/CORE/HDD/inc/wlan_hdd_main.h
+index ef59c05..e53da56 100644
+--- a/CORE/HDD/inc/wlan_hdd_main.h
++++ b/CORE/HDD/inc/wlan_hdd_main.h
+@@ -141,15 +141,7 @@
+ #define MAC_ADDRESS_STR "%02x:%02x:%02x:%02x:%02x:%02x"
+ #define MAX_GENIE_LEN 255
+ 
+-#if defined(QC_WLAN_CHIPSET_PRIMA)
+ #define WLAN_CHIP_VERSION   "WCNSS"
+-#elif defined(ANI_CHIPSET_LIBRA)
+-#define WLAN_CHIP_VERSION   "WCN1312"
+-#elif defined(ANI_CHIPSET_VOLANS)
+-#define WLAN_CHIP_VERSION   "WCN1314"
+-#else
+-#define WLAN_CHIP_VERSION   "UNKNOWN"
+-#endif
+ 
+ #define hddLog(level, args...) VOS_TRACE( VOS_MODULE_ID_HDD, level, ## args)
+ #define ENTER() VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO, "Enter:%s", __func__)
+diff --git a/CORE/HDD/src/wlan_hdd_ftm.c b/CORE/HDD/src/wlan_hdd_ftm.c
+index 49be302..e567805 100644
+--- a/CORE/HDD/src/wlan_hdd_ftm.c
++++ b/CORE/HDD/src/wlan_hdd_ftm.c
+@@ -2965,80 +2965,6 @@ done:
+ }
+ 
+ 
+-static VOS_STATUS wlan_ftm_priv_set_rssi_offset(hdd_adapter_t *pAdapter,v_S15_t *phyRxChains)
+-{
+-#ifndef ANI_CHIPSET_VOLANS
+-    tPttMsgbuffer *pMsgBuf;
+-    uPttMsgs *pMsgBody;
+-    VOS_STATUS status;
+-    hdd_context_t *pHddCtx = (hdd_context_t *)pAdapter->pHddCtx;
+-
+-    if(pHddCtx->ftm.ftm_state != WLAN_FTM_STARTED)
+-    {
+-        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_FATAL, "%s:Ftm has not started. Please start the ftm. ",__func__);
+-        return VOS_STATUS_E_FAILURE;
+-    }
+-
+-    pMsgBuf = (tPttMsgbuffer *)vos_mem_malloc(sizeof(tPttMsgbuffer));
+-
+-    init_completion(&pHddCtx->ftm.ftm_comp_var);
+-    pMsgBuf->msgId = PTT_MSG_SET_NV_TABLE;
+-    pMsgBuf->msgBodyLength = sizeof(tMsgPttSetNvTable) + PTT_HEADER_LENGTH;
+-    pMsgBody = &pMsgBuf->msgBody;
+-    pMsgBody->SetNvTable.nvTable= NV_TABLE_RSSI_OFFSETS;
+-    memcpy(&pMsgBody->SetNvTable.tableData.rssiOffset[0], phyRxChains,sizeof(tANI_S16) * PHY_MAX_RX_CHAINS);
+-
+-    VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO_HIGH, "rssiOffset[0]= %d rssiOffset[1]= %d\n",
+-                                                            pMsgBody->SetNvTable.tableData.rssiOffset[0],
+-                                                            pMsgBody->SetNvTable.tableData.rssiOffset[1]);
+-
+-    status = wlan_ftm_postmsg((v_U8_t*)pMsgBuf,pMsgBuf->msgBodyLength);
+-    if(status != VOS_STATUS_SUCCESS)
+-    {
+-        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_FATAL, "%s:wlan_ftm_postmsg failed",__func__);
+-        status = VOS_STATUS_E_FAILURE;
+-        goto done;
+-    }
+-
+-    wait_for_completion_interruptible_timeout(&pHddCtx->ftm.ftm_comp_var, msecs_to_jiffies(WLAN_FTM_COMMAND_TIME_OUT));
+-    if(pMsgBuf->msgResponse != PTT_STATUS_SUCCESS)
+-    {
+-        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_FATAL, "%s:Ptt response status failed",__func__);
+-        status = VOS_STATUS_E_FAILURE;
+-        goto done;
+-    }
+-
+-    init_completion(&pHddCtx->ftm.ftm_comp_var);
+-    pMsgBuf->msgId = PTT_MSG_STORE_NV_TABLE;
+-    pMsgBuf->msgBodyLength = sizeof(tMsgPttStoreNvTable) + PTT_HEADER_LENGTH;
+-    pMsgBody = &pMsgBuf->msgBody;
+-    pMsgBody->StoreNvTable.nvTable= NV_TABLE_RSSI_OFFSETS;
+-
+-    status = wlan_ftm_postmsg((v_U8_t*)pMsgBuf,pMsgBuf->msgBodyLength);
+-    if(status != VOS_STATUS_SUCCESS)
+-    {
+-        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_FATAL, "%s:wlan_ftm_postmsg failed",__func__);
+-        status = VOS_STATUS_E_FAILURE;
+-        goto done;
+-    }
+-
+-    wait_for_completion_interruptible_timeout(&pHddCtx->ftm.ftm_comp_var, msecs_to_jiffies(WLAN_FTM_COMMAND_TIME_OUT));
+-    if(pMsgBuf->msgResponse != PTT_STATUS_SUCCESS)
+-    {
+-        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_FATAL, "%s:Ptt response status failed",__func__);
+-        status = VOS_STATUS_E_FAILURE;
+-        goto done;
+-    }
+-done:
+-    vos_mem_free((v_VOID_t * )pMsgBuf);
+-
+-    return status;
+-#else
+-    return VOS_STATUS_E_FAILURE;
+-#endif
+-}
+-
+-
+ /**---------------------------------------------------------------------------
+ 
+   \brief wlan_ftm_rx_mode() -
+@@ -4255,41 +4181,6 @@ static int iw_ftm_setnone_getnone(struct net_device *dev, struct iw_request_info
+     return ret;
+ }
+ 
+-static int iw_ftm_set_var_ints_getnone(struct net_device *dev, struct iw_request_info *info,
+-        union iwreq_data *wrqu, char *extra)
+-{
+-
+-    hdd_adapter_t *pAdapter = (netdev_priv(dev));
+-    int sub_cmd = wrqu->data.flags;
+-    int *value = (int*)wrqu->data.pointer;
+-    v_S15_t phyRxChains[MAX_FTM_VAR_ARGS] = {0};
+-
+-    if(wrqu->data.length != 2)
+-    {
+-        hddLog(LOGE, "Invalid number of Arguments  %d  \n",  wrqu->data.length);
+-        return -EINVAL;
+-    }
+-    switch (sub_cmd)
+-    {
+-        case WE_SET_RSSI_OFFSET:
+-        {
+-            phyRxChains[0] = *(v_S15_t*) value++;
+-            phyRxChains[1] = *(v_S15_t*) value;
+-            VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO_HIGH,"PhyRxchain0=%d PhyRxChain1=%d\n",phyRxChains[0],phyRxChains[1]);
+-            wlan_ftm_priv_set_rssi_offset(pAdapter, &phyRxChains[0]);
+-        }
+-        break;
+-
+-        default:
+-        {
+-            hddLog(LOGE, "Invalid IOCTL command %d  \n",  sub_cmd );
+-            break;
+-        }
+-    }
+-
+-    return 0;
+-}
+-
+ static const iw_handler we_ftm_private[] = {
+ 
+    [WLAN_FTM_PRIV_SET_INT_GET_NONE      - SIOCIWFIRSTPRIV]   = iw_ftm_setint_getnone,  //set priv ioctl
+@@ -4297,7 +4188,6 @@ static const iw_handler we_ftm_private[] = {
+    [WLAN_FTM_PRIV_SET_CHAR_GET_NONE     - SIOCIWFIRSTPRIV]   = iw_ftm_setchar_getnone, //get priv ioctl
+    [WLAN_FTM_PRIV_GET_CHAR_SET_NONE     - SIOCIWFIRSTPRIV]   = iw_ftm_get_char_setnone,
+    [WLAN_FTM_PRIV_SET_NONE_GET_NONE     - SIOCIWFIRSTPRIV]   = iw_ftm_setnone_getnone, //action priv ioctl
+-   [WLAN_FTM_PRIV_SET_VAR_INT_GET_NONE  - SIOCIWFIRSTPRIV]   = iw_ftm_set_var_ints_getnone,
+ };
+ 
+ /*Maximum command length can be only 15 */
+@@ -4427,16 +4317,6 @@ static const struct iw_priv_args we_ftm_private_args[] = {
+         IW_PRIV_TYPE_CHAR| WE_FTM_MAX_STR_LEN,
+         "get_rx_rssi" },
+ 
+-    {   WLAN_FTM_PRIV_SET_VAR_INT_GET_NONE,
+-        IW_PRIV_TYPE_INT | MAX_FTM_VAR_ARGS,
+-        0,
+-        "" },
+-
+-    {   WE_SET_RSSI_OFFSET,
+-        IW_PRIV_TYPE_INT| MAX_FTM_VAR_ARGS,
+-        0,
+-        "set_rssi_offset" },
+-
+     /* handlers for main ioctl */
+     {   WLAN_FTM_PRIV_SET_NONE_GET_NONE,
+         0,
+diff --git a/CORE/MAC/src/include/sirParams.h b/CORE/MAC/src/include/sirParams.h
+index b3d9018..a7cae94 100644
+--- a/CORE/MAC/src/include/sirParams.h
++++ b/CORE/MAC/src/include/sirParams.h
+@@ -455,7 +455,6 @@ typedef struct sSirMbMsgP2p
+ #define SIR_HAL_HANDLE_FW_MBOX_RSP            (SIR_HAL_ITC_MSG_TYPES_BEGIN + 140)
+ #define SIR_HAL_UPDATE_PROBE_RSP_TEMPLATE_IND     (SIR_HAL_ITC_MSG_TYPES_BEGIN + 141)
+ 
+-#ifdef ANI_CHIPSET_VOLANS
+ /* PE <-> HAL addr2 mismatch message */
+ #define SIR_LIM_ADDR2_MISS_IND             (SIR_HAL_ITC_MSG_TYPES_BEGIN + 142)
+ #ifdef FEATURE_OEM_DATA_SUPPORT
+@@ -464,7 +463,6 @@ typedef struct sSirMbMsgP2p
+ #define SIR_HAL_START_OEM_DATA_RSP       (SIR_HAL_ITC_MSG_TYPES_BEGIN + 144)
+ #define SIR_HAL_FINISH_OEM_DATA_REQ      (SIR_HAL_ITC_MSG_TYPES_BEGIN + 145)
+ #endif
+-#endif
+ 
+ #define SIR_HAL_SET_MAX_TX_POWER_REQ       (SIR_HAL_ITC_MSG_TYPES_BEGIN + 146)
+ #define SIR_HAL_SET_MAX_TX_POWER_RSP       (SIR_HAL_ITC_MSG_TYPES_BEGIN + 147)
+diff --git a/CORE/MAC/src/pe/lim/limProcessMessageQueue.c b/CORE/MAC/src/pe/lim/limProcessMessageQueue.c
+index 73bb668..29b336f 100644
+--- a/CORE/MAC/src/pe/lim/limProcessMessageQueue.c
++++ b/CORE/MAC/src/pe/lim/limProcessMessageQueue.c
+@@ -337,93 +337,6 @@ limHandleFramesInScanState(tpAniSirGlobal pMac, tpSirMsgQ limMsg, tANI_U8 *pRxPa
+ \ -------------------------------------------------------------- */
+ static void limHandleUnknownA2IndexFrames(tpAniSirGlobal pMac, void *pRxPacketInfo,tpPESession psessionEntry)
+ {
+-#ifndef ANI_CHIPSET_VOLANS
+-    tpSirMacDataHdr3a pMacHdr;
+-
+-    /** This prevents from disassoc/deauth being sent in a burst,
+-        and gLimDisassocFrameCredit is reset for every 10 seconds.*/
+-    if (pMac->lim.gLimDisassocFrameCredit > pMac->lim.gLimDisassocFrameThreshold)
+-        return;
+-
+-    pMac->lim.gLimDisassocFrameCredit++;
+-
+-    pMacHdr = WDA_GET_RX_MPDUHEADER3A(pRxPacketInfo);
+-
+-    if (limIsGroupAddr(pMacHdr->addr2))
+-    {
+-        PELOG2(limLog(pMac, LOG2, FL("Ignoring A2 Invalid Packet received for MC/BC:\n"));
+-        limPrintMacAddr(pMac, pMacHdr->addr2, LOG2);)
+-
+-        return;
+-    }
+-
+-    if (((psessionEntry->limSystemRole == eLIM_AP_ROLE) || (psessionEntry->limSystemRole == eLIM_BT_AMP_AP_ROLE) )&&
+-        (psessionEntry->limMlmState == eLIM_MLM_BSS_STARTED_STATE))
+-    {
+-        switch (pMacHdr->fc.type)
+-        {
+-            case SIR_MAC_MGMT_FRAME:
+-                switch (pMacHdr->fc.subType)
+-                {
+-                    case SIR_MAC_MGMT_ACTION:
+-                        // Send Disassociation frame to
+-                        // sender if role is AP
+-                        PELOG1(limLog(pMac, LOG1, FL("Send Disassoc Frame due to Invalid Addr2 packet"));
+-                        limPrintMacAddr(pMac, pMacHdr->addr2, LOG1);)
+-                        limSendDisassocMgmtFrame(pMac,
+-                           eSIR_MAC_CLASS3_FRAME_FROM_NON_ASSOC_STA_REASON, pMacHdr->addr2, psessionEntry, FALSE);
+-                        break;
+-
+-                    default:
+-                        break;
+-
+-                }
+-                break;
+-
+-            case SIR_MAC_CTRL_FRAME:
+-                switch (pMacHdr->fc.subType)
+-                {
+-                    case SIR_MAC_CTRL_PS_POLL:
+-                    case SIR_MAC_CTRL_BAR:
+-                        // Send Disassociation frame to
+-                        // sender if role is AP
+-                        PELOG1(limLog(pMac, LOG1, FL("Send Disassoc Frame due to Invalid Addr2 packet"));
+-                        limPrintMacAddr(pMac, pMacHdr->addr2, LOG1);)
+-                        limSendDisassocMgmtFrame(pMac,
+-                           eSIR_MAC_CLASS3_FRAME_FROM_NON_ASSOC_STA_REASON, pMacHdr->addr2, psessionEntry, FALSE);
+-                        break;
+-
+-                    default:
+-                        break;
+-                }
+-                break;
+-
+-            case SIR_MAC_DATA_FRAME:
+-                switch (pMacHdr->fc.subType)
+-                {
+-                    case SIR_MAC_DATA_NULL:
+-                    case SIR_MAC_DATA_QOS_NULL:
+-                        // Send Disassociation frame to
+-                        // sender if role is AP
+-                        PELOG1(limLog(pMac, LOG1, FL("Send Disassoc Frame due to Invalid Addr2 packet"));
+-                        limPrintMacAddr(pMac, pMacHdr->addr2, LOG1);)
+-                        limSendDisassocMgmtFrame(pMac,
+-                           eSIR_MAC_CLASS3_FRAME_FROM_NON_ASSOC_STA_REASON, pMacHdr->addr2, psessionEntry, FALSE);
+-                        break;
+-
+-                    default:
+-                        // Send Deauthentication frame to
+-                        // sender if role is AP
+-                        PELOG1(limLog(pMac, LOG1, FL("Sending Deauth frame due to Invalid Addr2 packet"));
+-                        limPrintMacAddr(pMac, pMacHdr->addr2, LOG1);)
+-                        limSendDeauthMgmtFrame(pMac,
+-                           eSIR_MAC_CLASS3_FRAME_FROM_NON_ASSOC_STA_REASON, pMacHdr->addr2,psessionEntry);
+-                        break;
+-                }
+-                break;
+-        }
+-    }
+-#else
+       /* addr2 mismatch interrupt occurred this means previous 
+        disassociation was not successful
+        In Volans pRxPacketInfo only contains pointer 48-bit address2 field */
+@@ -480,7 +393,6 @@ static void limHandleUnknownA2IndexFrames(tpAniSirGlobal pMac, void *pRxPacketIn
+     }
+ #endif
+ 
+-#endif
+ 
+     return;
+ }
+@@ -1852,7 +1764,6 @@ limProcessMessages(tpAniSirGlobal pMac, tpSirMsgQ  limMsg)
+             }
+             break;
+ 
+-#ifdef ANI_CHIPSET_VOLANS
+        case SIR_LIM_ADDR2_MISS_IND:
+        {
+            limLog(pMac, LOGE,
+@@ -1867,7 +1778,6 @@ limProcessMessages(tpAniSirGlobal pMac, tpSirMsgQ  limMsg)
+            vos_mem_free((v_VOID_t *)(limMsg->bodyptr));
+            break;
+        }
+-#endif
+ 
+ #ifdef WLAN_FEATURE_VOWIFI_11R
+     case WDA_AGGR_QOS_RSP:
+diff --git a/CORE/SME/src/csr/csrApiScan.c b/CORE/SME/src/csr/csrApiScan.c
+index 4775b78..71c61f3 100644
+--- a/CORE/SME/src/csr/csrApiScan.c
++++ b/CORE/SME/src/csr/csrApiScan.c
+@@ -39,15 +39,15 @@
+  * PERFORMANCE OF THIS SOFTWARE.
+  */
+ 
+-/** ------------------------------------------------------------------------- * 
+-    ------------------------------------------------------------------------- *  
++/** ------------------------------------------------------------------------- *
++    ------------------------------------------------------------------------- *
++
+ 
+-  
+     \file csrApiScan.c
+-  
++
+     Implementation for the Common Scan interfaces.
+-  
+-    Copyright (C) 2006 Airgo Networks, Incorporated 
++
++    Copyright (C) 2006 Airgo Networks, Incorporated
+    ========================================================================== */
+ 
+ #include "aniGlobal.h"
+@@ -65,7 +65,7 @@
+ 
+ #include "vos_nvitem.h"
+ #include "wlan_qct_wda.h"
+-                                                                     
++
+ #define CSR_VALIDATE_LIST  //This portion of code need to be removed once the issue is resolved.
+ 
+ #ifdef CSR_VALIDATE_LIST
+@@ -4975,31 +4975,22 @@ eHalStatus csrSendMBScanReq( tpAniSirGlobal pMac, tANI_U16 sessionId,
+                                                         SIR_SCAN_MAX_NUM_SSID;
+             if((pScanReq->SSIDs.numOfSSIDs != 0) && ( eSIR_PASSIVE_SCAN != scanType ))
+             {
+-            for (i = 0; i < pMsg->numSsid; i++)
+-            {
+-                palCopyMemory(pMac->hHdd, &pMsg->ssId[i], &pScanReq->SSIDs.SSIDList[i].SSID, sizeof(tSirMacSSid));
+-            }
++                for (i = 0; i < pMsg->numSsid; i++)
++                {
++                    palCopyMemory(pMac->hHdd, &pMsg->ssId[i], &pScanReq->SSIDs.SSIDList[i].SSID, sizeof(tSirMacSSid));
++                }
+             }
+             else
+             {
+                 //Otherwise we scan all SSID and let the result filter later
+-            for (i = 0; i < SIR_SCAN_MAX_NUM_SSID; i++)
+-            {
+-                pMsg->ssId[i].length = 0;
+-            }
++                for (i = 0; i < SIR_SCAN_MAX_NUM_SSID; i++)
++                {
++                    pMsg->ssId[i].length = 0;
++                }
+             }
+ 
+-//TODO: This preprocessor macro should be removed from CSR for production driver
+-//This is a temperarory fix for scanning on FPGA.
+-#if defined (ANI_CHIPSET_VIRGO) || defined (LIBRA_FPGA)|| defined (VOLANS_FPGA)
+-            pMsg->minChannelTime = pal_cpu_to_be32(minChnTime * 8);
+-            pMsg->maxChannelTime = pal_cpu_to_be32(maxChnTime * 8);
+-#elif defined (ANI_CHIPSET_TAURUS) || defined(ANI_CHIPSET_LIBRA) || defined(ANI_CHIPSET_VOLANS)
+             pMsg->minChannelTime = pal_cpu_to_be32(minChnTime);
+             pMsg->maxChannelTime = pal_cpu_to_be32(maxChnTime);
+-#else
+-#error unknown chipset
+-#endif
+             pMsg->minChannelTimeBtc = pMac->roam.configParam.nActiveMinChnTimeBtc;
+             pMsg->maxChannelTimeBtc = pMac->roam.configParam.nActiveMaxChnTimeBtc;
+             //hidden SSID option
+diff --git a/CORE/SYS/legacy/src/utils/src/macTrace.c b/CORE/SYS/legacy/src/utils/src/macTrace.c
+index 21b87a8..5f584d8 100644
+--- a/CORE/SYS/legacy/src/utils/src/macTrace.c
++++ b/CORE/SYS/legacy/src/utils/src/macTrace.c
+@@ -467,13 +467,11 @@ tANI_U8* macTraceGetWdaMsgString( tANI_U16 wdaMsg )
+         CASE_RETURN_STRING(WDA_HANDLE_FW_MBOX_RSP);
+         CASE_RETURN_STRING(WDA_UPDATE_PROBE_RSP_TEMPLATE_IND);
+         CASE_RETURN_STRING(WDA_SIGNAL_BTAMP_EVENT);
+-#ifdef ANI_CHIPSET_VOLANS
+ #ifdef FEATURE_OEM_DATA_SUPPORT
+         CASE_RETURN_STRING(WDA_START_OEM_DATA_REQ );
+         CASE_RETURN_STRING(WDA_START_OEM_DATA_RSP);
+         CASE_RETURN_STRING(WDA_FINISH_OEM_DATA_REQ);
+ #endif //SUPPORT_BEACON_FILTER
+-#endif
+         CASE_RETURN_STRING(WDA_SET_MAX_TX_POWER_REQ);
+         CASE_RETURN_STRING(WDA_SET_MAX_TX_POWER_RSP);
+         CASE_RETURN_STRING(WDA_SEND_MSG_COMPLETE);
+diff --git a/CORE/TL/inc/wlan_qct_tl.h b/CORE/TL/inc/wlan_qct_tl.h
+index 90f7077..fd9ddfe 100644
+--- a/CORE/TL/inc/wlan_qct_tl.h
++++ b/CORE/TL/inc/wlan_qct_tl.h
+@@ -39,23 +39,29 @@
+  * PERFORMANCE OF THIS SOFTWARE.
+  */
+ 
+-
+ #ifndef WLAN_QCT_WLANTL_H
+ #define WLAN_QCT_WLANTL_H
+ 
+ /*===========================================================================
+ 
+-               W L A N   T R A N S P O R T   L A Y E R 
++               W L A N   T R A N S P O R T   L A Y E R
+                        E X T E R N A L  A P I
+-                
+-                   
++
++
+ DESCRIPTION
+-  This file contains the external API exposed by the wlan transport layer 
++  This file contains the external API exposed by the wlan transport layer
+   module.
++<<<<<<< HEAD:CORE/TL/inc/wlan_qct_tl.h
+   
+       
+   Copyright (c) 2008 QUALCOMM Incorporated. All Rights Reserved.
+   Qualcomm Confidential and Proprietary
++=======
++
++
++  Copyright (c) 2008 Qualcomm Technologies, Inc. All Rights Reserved.
++  Qualcomm Technologies Confidential and Proprietary
++>>>>>>> 326d6cf... wlan: remove obsolete ANI_CHIPSET_VOLANS featurization:prima/CORE/TL/inc/wlan_qct_tl.h
+ ===========================================================================*/
+ 
+ 
+@@ -150,9 +156,7 @@ when        who    what, where, why
+ //#define WLANTL_BC_STA_ID  0x00
+ 
+ 
+-#ifdef ANI_CHIPSET_VOLANS
+ #define WLANTL_MAX_TID                        15
+-#endif
+ /*--------------------------------------------------------------------------
+   Access category enum used by TL
+   - order must be kept as these values are used to setup the AC mask
+@@ -297,11 +301,9 @@ typedef struct
+ 
+   /*Initial state at which the STA should be brought up to*/
+   WLANTL_STAStateType ucInitState;
+-#ifdef ANI_CHIPSET_VOLANS
+  /* 1 means replay check is needed for the station,
+     0 means replay check is not needed for the station*/ 
+   v_BOOL_t      ucIsReplayCheckValid; 
+-#endif
+ }WLAN_STADescType;
+ 
+ /*---------------------------------------------------------------------------
+@@ -2320,7 +2322,6 @@ VOS_STATUS WLANTL_ResetSpecStatistic
+    WLANTL_TRANSFER_STATIC_TYPE  statType,
+    v_U8_t                       STAid
+ );
+-#ifdef ANI_CHIPSET_VOLANS
+ /*===============================================================================
+   FUNCTION      WLANTL_IsReplayPacket
+    
+@@ -2362,7 +2363,6 @@ WLANTL_GetReplayCounterFromRxBD
+ (
+    v_U8_t *pucRxBDHeader
+ );
+-#endif /*End of #ifdef ANI_CHIPSET_VOLANS*/
+ 
+ 
+ 
+diff --git a/CORE/TL/src/wlan_qct_tl.c b/CORE/TL/src/wlan_qct_tl.c
+index 101fe09..accdeea 100644
+--- a/CORE/TL/src/wlan_qct_tl.c
++++ b/CORE/TL/src/wlan_qct_tl.c
+@@ -1149,9 +1149,7 @@ WLANTL_RegisterSTAClient
+ {
+   WLANTL_CbType*  pTLCb = NULL;
+   WLANTL_STAClientType* pClientSTA = NULL;
+-#ifdef ANI_CHIPSET_VOLANS
+   v_U8_t    ucTid = 0;/*Local variable to clear previous replay counters of STA on all TIDs*/
+-#endif
+   /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+ 
+   /*------------------------------------------------------------------------
+@@ -1286,7 +1284,6 @@ WLANTL_RegisterSTAClient
+ 
+   vos_copy_macaddr( &pClientSTA->wSTADesc.vSelfMACAddress, &pwSTADescType->vSelfMACAddress);
+ 
+-#ifdef ANI_CHIPSET_VOLANS
+   /* In volans release L replay check is done at TL */
+   pClientSTA->ucIsReplayCheckValid = pwSTADescType->ucIsReplayCheckValid;
+   pClientSTA->ulTotalReplayPacketsDetected =  0;
+@@ -1295,7 +1292,6 @@ WLANTL_RegisterSTAClient
+   {
+     pClientSTA->ullReplayCounter[ucTid] =  0;
+   }
+-#endif
+ 
+   /*--------------------------------------------------------------------
+       Set the AC for the registered station to the highest priority AC
+@@ -7407,12 +7403,10 @@ WLANTL_STARxAuth
+    WLANTL_RxMetaInfoType    wRxMetaInfo;
+    static v_U8_t            ucPMPDUHLen;
+    v_U32_t*                  STAMetaInfoPtr;
+-#ifdef ANI_CHIPSET_VOLANS
+    v_U8_t                   ucEsf=0; /* first subframe of AMSDU flag */
+    v_U64_t                  ullcurrentReplayCounter=0; /*current replay counter*/
+    v_U64_t                  ullpreviousReplayCounter=0; /*previous replay counter*/
+    v_U16_t                  ucUnicastBroadcastType=0; /*It denotes whether received frame is UC or BC*/
+-#endif
+    struct _BARFrmStruct     *pBarFrame = NULL;
+ 
+   /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+@@ -7467,10 +7461,8 @@ WLANTL_STARxAuth
+       ucTid = pBarFrame->barControl.numTID;
+   }
+ 
+-#ifdef ANI_CHIPSET_VOLANS
+   /*Host based replay check is needed for unicast data frames*/
+   ucUnicastBroadcastType  = (v_U16_t)WDA_IS_RX_BCAST(aucBDHeader);
+-#endif
+   if(0 != ucMPDUHLen)
+   {
+     ucPMPDUHLen = ucMPDUHLen;
+@@ -7637,7 +7629,6 @@ WLANTL_STARxAuth
+     WLANTL_MSDUReorder( pTLCb, &vosDataBuff, aucBDHeader, ucSTAId, ucTid );
+   }
+ 
+-#ifdef ANI_CHIPSET_VOLANS
+ if(0 == ucUnicastBroadcastType
+ #ifdef FEATURE_ON_CHIP_REORDERING
+    && (WLANHAL_IsOnChipReorderingEnabledForTID(pvosGCtx, ucSTAId, ucTid) != TRUE)
+@@ -7741,7 +7732,6 @@ if(0 == ucUnicastBroadcastType
+ }
+ /*It is a broadast packet DPU has already done replay check for 
+   broadcast packets no need to do replay check of these packets*/
+-#endif /*End of #ifdef ANI_CHIPSET_VOLANS*/
+ 
+   if ( NULL != vosDataBuff )
+   {
+@@ -11522,7 +11512,6 @@ static VOS_STATUS WLANTL_GetEtherType_2
+ }
+ #endif /* FEATURE_WLAN_TDLS */
+ 
+-#ifdef ANI_CHIPSET_VOLANS
+ /*===============================================================================
+   FUNCTION      WLANTL_IsReplayPacket
+      
+@@ -11614,7 +11603,6 @@ WLANTL_GetReplayCounterFromRxBD
+ #endif
+ }
+ #endif
+-#endif
+ 
+ /*===============================================================================
+   FUNCTION      WLANTL_PostResNeeded
+diff --git a/CORE/TL/src/wlan_qct_tl_ba.c b/CORE/TL/src/wlan_qct_tl_ba.c
+index 4f01c6b..7fa9d2f 100644
+--- a/CORE/TL/src/wlan_qct_tl_ba.c
++++ b/CORE/TL/src/wlan_qct_tl_ba.c
+@@ -218,7 +218,6 @@ v_VOID_t WLANTL_ReorderingAgingTimerExpierCB
+       fwIdx = ReorderInfo->ucCIndex - 1;
+    }
+ 
+-#ifdef ANI_CHIPSET_VOLANS
+    /* Do replay check before giving packets to upper layer 
+       replay check code : check whether replay check is needed or not */
+    if(VOS_TRUE == pClientSTA->ucIsReplayCheckValid)
+@@ -278,7 +277,6 @@ v_VOID_t WLANTL_ReorderingAgingTimerExpierCB
+          }
+        } 
+    }
+-#endif
+ 
+    status = WLANTL_ChainFrontPkts(fwIdx, opCode, 
+                                   &vosDataBuff, ReorderInfo, NULL);
+@@ -370,9 +368,7 @@ void WLANTL_InitBAReorderBuffer
+       for(pIdx = 0; pIdx < WLANTL_MAX_WINSIZE; pIdx++)
+       {
+          pTLCb->reorderBufferPool[idx].arrayBuffer[pIdx] = NULL;
+-#ifdef ANI_CHIPSET_VOLANS
+          pTLCb->reorderBufferPool[idx].ullReplayCounter[pIdx] = 0; 
+-#endif
+       }
+    }
+ 
+@@ -1075,9 +1071,7 @@ VOS_STATUS WLANTL_MSDUReorder
+    VOS_STATUS           timerStatus = VOS_STATUS_SUCCESS; 
+    VOS_TIMER_STATE      timerState;
+    v_SIZE_t             rxFree;
+-#ifdef ANI_CHIPSET_VOLANS
+    v_U64_t              ullreplayCounter = 0; /* 48-bit replay counter */
+-#endif
+    if((NULL == pTLCb) || (*vosDataBuff == NULL))
+    {
+       TLLOGE(VOS_TRACE(VOS_MODULE_ID_TL, VOS_TRACE_LEVEL_ERROR,"Invalid ARG pTLCb 0x%p, vosDataBuff 0x%p",
+@@ -1155,13 +1149,11 @@ VOS_STATUS WLANTL_MSDUReorder
+          status = WLANTL_QueueCurrent(currentReorderInfo,
+                                       vosDataBuff,
+                                       ucSlotIdx);
+-#ifdef ANI_CHIPSET_VOLANS
+          if(VOS_TRUE == pClientSTA->ucIsReplayCheckValid)
+          {
+              WLANTL_FillReplayCounter(currentReorderInfo,
+                                ullreplayCounter, ucSlotIdx);
+          }
+-#endif
+          if(VOS_STATUS_E_RESOURCES == status)
+          {
+             /* This is the case slot index is already cycle one route, route all the frames Qed */
+@@ -1258,13 +1250,11 @@ VOS_STATUS WLANTL_MSDUReorder
+          status = WLANTL_QueueCurrent(currentReorderInfo,
+                                       vosDataBuff,
+                                       ucSlotIdx);
+-#ifdef ANI_CHIPSET_VOLANS
+            if(VOS_TRUE == pClientSTA->ucIsReplayCheckValid)
+            {
+                WLANTL_FillReplayCounter(currentReorderInfo,
+                                  ullreplayCounter, ucSlotIdx);
+            }
+-#endif
+          if(VOS_STATUS_E_RESOURCES == status)
+          {
+             /* This is the case slot index is already cycle one route, route all the frames Qed */
+@@ -1321,13 +1311,11 @@ VOS_STATUS WLANTL_MSDUReorder
+          status = WLANTL_QueueCurrent(currentReorderInfo,
+                                       vosDataBuff,
+                                       ucSlotIdx);
+-#ifdef ANI_CHIPSET_VOLANS
+            if(VOS_TRUE == pClientSTA->ucIsReplayCheckValid)
+            {
+                WLANTL_FillReplayCounter(currentReorderInfo,
+                                  ullreplayCounter, ucSlotIdx);
+            }
+-#endif
+          if(VOS_STATUS_E_RESOURCES == status)
+          {
+             vos_pkt_return_packet(vosPktIdx); 
+@@ -1458,13 +1446,11 @@ VOS_STATUS WLANTL_MSDUReorder
+          status = WLANTL_QueueCurrent(currentReorderInfo,
+                                       vosDataBuff,
+                                       ucSlotIdx);
+-#ifdef ANI_CHIPSET_VOLANS
+            if(VOS_TRUE == pClientSTA->ucIsReplayCheckValid)
+            {
+                WLANTL_FillReplayCounter(currentReorderInfo,
+                                  ullreplayCounter, ucSlotIdx);
+            }
+-#endif
+          if(!VOS_IS_STATUS_SUCCESS(status))
+          {
+             TLLOGE(VOS_TRACE(VOS_MODULE_ID_TL, VOS_TRACE_LEVEL_ERROR,"Q Current frame fail %d",
+@@ -1782,7 +1768,6 @@ VOS_STATUS WLANTL_ChainFrontPkts
+ 
+    return status; 
+ }/*WLANTL_ChainFrontPkts*/
+-#ifdef ANI_CHIPSET_VOLANS
+ /*==========================================================================
+  
+   FUNCTION    WLANTL_FillReplayCounter
+@@ -1825,5 +1810,4 @@ void WLANTL_FillReplayCounter
+                //pwBaReorder->reorderBuffer->ullReplayCounter);
+    return;
+ }/*WLANTL_FillReplayCounter*/
+-#endif /*End of #ifdef WLANTL_HAL_VOLANS*/
+ 
+diff --git a/CORE/TL/src/wlan_qct_tli.h b/CORE/TL/src/wlan_qct_tli.h
+index 15ae536..167fc2e 100644
+--- a/CORE/TL/src/wlan_qct_tli.h
++++ b/CORE/TL/src/wlan_qct_tli.h
+@@ -393,9 +393,7 @@ STATIC const WLANTL_STAFsmEntryType tlSTAFsm[WLANTL_STA_MAX_STATE] =
+ typedef struct
+ {
+    v_BOOL_t     isAvailable;
+-#ifdef ANI_CHIPSET_VOLANS
+    v_U64_t      ullReplayCounter[WLANTL_MAX_WINSIZE];
+-#endif
+    v_PVOID_t    arrayBuffer[WLANTL_MAX_WINSIZE];
+ } WLANTL_REORDER_BUFFER_T;
+ 
+@@ -620,7 +618,6 @@ typedef struct
+   /* Queue to keep unicast station management frame */
+   vos_list_t pStaManageQ;
+ 
+-#ifdef ANI_CHIPSET_VOLANS
+  /* 1 means replay check is needed for the station,
+   * 0 means replay check is not needed for the station*/
+   v_BOOL_t      ucIsReplayCheckValid;
+@@ -631,7 +628,6 @@ typedef struct
+  /* It contains no of replay packets found per STA.
+     It is for debugging purpose only.*/
+   v_U32_t       ulTotalReplayPacketsDetected;
+-#endif
+ 
+  /* Set when pairwise key is installed, if ptkInstalled is
+     1 then we have to encrypt the data irrespective of TL
+diff --git a/CORE/TL/src/wlan_qct_tli_ba.h b/CORE/TL/src/wlan_qct_tli_ba.h
+index 79fff15..b3acfc2 100644
+--- a/CORE/TL/src/wlan_qct_tli_ba.h
++++ b/CORE/TL/src/wlan_qct_tli_ba.h
+@@ -379,7 +379,6 @@ VOS_STATUS WLANTL_ChainFrontPkts
+    WLANTL_CbType          *pTLCb
+ );
+ 
+-#ifdef ANI_CHIPSET_VOLANS
+ /*==========================================================================
+  
+    FUNCTION    WLANTL_FillReplayCounter
+@@ -410,6 +409,5 @@ void WLANTL_FillReplayCounter
+    v_U64_t                replayCounter,
+    v_U8_t                 ucSlotIndex
+ );
+-#endif /*ANI_CHIPSET_VOLANS*/
+ 
+ #endif /* #ifndef WLAN_QCT_TLI_H */
+diff --git a/CORE/WDA/inc/wlan_qct_wda.h b/CORE/WDA/inc/wlan_qct_wda.h
+index d2c8460..01cbe3e 100644
+--- a/CORE/WDA/inc/wlan_qct_wda.h
++++ b/CORE/WDA/inc/wlan_qct_wda.h
+@@ -940,14 +940,12 @@ tSirRetStatus uMacPostCtrlMsg(void* pSirGlobal, tSirMbMsg* pMb);
+ #define WDA_UPDATE_PROBE_RSP_TEMPLATE_IND     SIR_HAL_UPDATE_PROBE_RSP_TEMPLATE_IND
+ #define WDA_SIGNAL_BTAMP_EVENT         SIR_HAL_SIGNAL_BTAMP_EVENT
+ 
+-#ifdef ANI_CHIPSET_VOLANS
+ #ifdef FEATURE_OEM_DATA_SUPPORT
+ /* PE <-> HAL OEM_DATA RELATED MESSAGES */
+ #define WDA_START_OEM_DATA_REQ         SIR_HAL_START_OEM_DATA_REQ 
+ #define WDA_START_OEM_DATA_RSP         SIR_HAL_START_OEM_DATA_RSP
+ #define WDA_FINISH_OEM_DATA_REQ        SIR_HAL_FINISH_OEM_DATA_REQ
+ #endif
+-#endif
+ 
+ #define WDA_SET_MAX_TX_POWER_REQ       SIR_HAL_SET_MAX_TX_POWER_REQ
+ #define WDA_SET_MAX_TX_POWER_RSP       SIR_HAL_SET_MAX_TX_POWER_RSP
+diff --git a/Kbuild b/Kbuild
+index c46fdfc..f1e8184 100644
+--- a/Kbuild
++++ b/Kbuild
+@@ -521,11 +521,6 @@ CDEFINES += -DWCN_PRONTO
+ CDEFINES += -DWCN_PRONTO_V1
+ endif
+ 
+-# there are still pieces of code which are conditional upon these
+-# need to investigate all of them to see which should also be
+-# conditional upon QC_WLAN_CHIPSET_PRIMA
+-CDEFINES += -DANI_CHIPSET_VOLANS
+-
+ ifeq ($(BUILD_DEBUG_VERSION),1)
+ CDEFINES +=	-DWLAN_DEBUG \
+ 		-DTRACE_RECORD \
+
