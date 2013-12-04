@@ -478,6 +478,11 @@ CDEFINES  := -DANI_PRODUCT_TYPE_CLIENT=1 \
 		-DWLAN_FEATURE_PACKET_FILTERING \
 		-DWLAN_FEATURE_VOWIFI
 
+# there are still pieces of code which are conditional upon these
+# need to investigate all of them to see which should also be
+# conditional upon QC_WLAN_CHIPSET_PRIMA
+CDEFINES += -DANI_CHIPSET_VOLANS 
+
 ifeq ($(BUILD_DEBUG_VERSION),1)
 CDEFINES += -DWLAN_DEBUG \
 		-DTRACE_RECORD \
