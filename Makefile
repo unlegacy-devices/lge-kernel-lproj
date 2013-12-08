@@ -250,8 +250,8 @@ else
 HOSTCC       = gcc
 HOSTCXX      = g++
 endif
-HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O3 -fomit-frame-pointer
-HOSTCXXFLAGS = -O3
+HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer
+HOSTCXXFLAGS = -O2
 
 # Decide whether to build built-in, modular, or both.
 # Normally, just do built-in.
@@ -362,8 +362,7 @@ CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF)
 ifdef CONFIG_LINARO
 MODFLAGS	=  -mcpu=cortex-a5 -march=armv7-a -mfpu=neon-vfpv4 \
-		   -ffast-math -fsingle-precision-constant -fgcse-lm -fgcse-sm -fsched-spec-load -fforce-addr \
-		   -fmodulo-sched -fmodulo-sched-allow-regmoves -fno-tree-vectorize
+		   -ffast-math -fsingle-precision-constant -fgcse-lm -fgcse-sm -fsched-spec-load -fforce-addr
 else
 MODFLAGS	=
 endif

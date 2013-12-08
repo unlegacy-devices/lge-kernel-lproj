@@ -200,7 +200,7 @@ static struct clkctl_acpu_speed pll0_960_pll1_245_pll2_1200_pll4_800[] = {
 	{ 0, 400000, ACPU_PLL_4, 6, 1, 50000, 3, 3, 122880 },
 	{ 1, 480000, ACPU_PLL_0, 4, 1, 60000, 3, 4, 122880 },
 	{ 1, 600000, ACPU_PLL_2, 2, 1, 75000, 3, 5, 160000 },
-	{ 1, 800000, ACPU_PLL_4, 6, 0, 100000, 3, 7, 200000 }, 
+	{ 1, 800000, ACPU_PLL_4, 6, 0, 100000, 3, 6, 200000 }, 
 	#else
    	{ 0, 19200, ACPU_PLL_TCXO, 0, 0, 2400, 3, 0, 30720 },
 	{ 0, 61440, ACPU_PLL_1, 1, 3,  7680, 3, 1,  61440 },
@@ -214,7 +214,11 @@ static struct clkctl_acpu_speed pll0_960_pll1_245_pll2_1200_pll4_800[] = {
 	{ 1, 800000, ACPU_PLL_4, 6, 0, 100000, 3, 7, 200000 }, 
 	#endif
 	#ifdef CONFIG_MSM7X27A_OVERCLOCK
-    	{ 1, 950000, ACPU_PLL_2, 2, 3, 118750, 3, 7, 200000 },
+	#ifdef CONFIG_MSM7X27A_UNDERVOLT 
+    	{ 1, 950000, ACPU_PLL_2, 2, 3, 118750, 3, 6, 200000 },
+	#else
+	{ 1, 950000, ACPU_PLL_2, 2, 3, 118750, 3, 7, 200000 },
+	#endif
 	{ 1, 1056000, ACPU_PLL_2, 2, 3, 132000, 3, 7, 200000 },	
 	#ifdef CONFIG_MSM7X27A_BACONMAKER
     	{ 1, 1094400, ACPU_PLL_2, 2, 3, 182400, 2, 7, 200000 },
