@@ -841,12 +841,6 @@ void __init iotable_init(struct map_desc *io_desc, int nr)
 
 #ifndef CONFIG_ARM_LPAE
 
-#else
-#define fill_pmd_gaps() do { } while (0)
-#endif
-
-#ifndef CONFIG_ARM_LPAE
-
 /*
  * The Linux PMD is made of two consecutive section entries covering 2MB
  * (see definition in include/asm/pgtable-2level.h).  However a call to
