@@ -174,6 +174,7 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size, size_t align
 	} else
 		err = -ENOMEM;
 
+out_locked:
 	mutex_unlock(&slab_mutex);
 	put_online_cpus();
 

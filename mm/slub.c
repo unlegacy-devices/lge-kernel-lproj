@@ -2323,13 +2323,18 @@ static __always_inline void *slab_alloc_node(struct kmem_cache *s,
 		return NULL;
 
 redo:
-
 	/*
 	 * Must read kmem_cache cpu data via this cpu ptr. Preemption is
 	 * enabled. We may switch back and forth between cpus while
 	 * reading from one cpu area. That does not matter as long
 	 * as we end up on the original cpu again when doing the cmpxchg.
+	 *
+	 * Preemption is disabled for the retrieval of the tid because that
+	 * must occur from the current processor. We cannot allow rescheduling
+	 * on a different processor between the determination of the pointer
+	 * and the retrieval of the tid.
 	 */
+	preempt_disable();
 	c = __this_cpu_ptr(s->cpu_slab);
 
 	/*
@@ -2339,7 +2344,7 @@ redo:
 	 * linked list in between.
 	 */
 	tid = c->tid;
-	barrier();
+	preempt_enable();
 
 	object = c->freelist;
 	page = c->page;
@@ -2586,10 +2591,11 @@ redo:
 	 * data is retrieved via this pointer. If we are on the same cpu
 	 * during the cmpxchg then the free will succedd.
 	 */
+	preempt_disable();
 	c = __this_cpu_ptr(s->cpu_slab);
 
 	tid = c->tid;
-	barrier();
+	preempt_enable();
 
 	if (likely(page == c->page)) {
 		set_freepointer(s, object, c->freelist);
@@ -2638,7 +2644,7 @@ EXPORT_SYMBOL(kmem_cache_free);
  * take the list_lock.
  */
 static int slub_min_order;
-static int slub_max_order;
+static int slub_max_order = PAGE_ALLOC_COSTLY_ORDER;
 static int slub_min_objects;
 
 /*
@@ -3626,20 +3632,8 @@ void __init kmem_cache_init(void)
 	if (debug_guardpage_minorder())
 		slub_max_order = 0;
 
-	kmem_size = offsetof(struct kmem_cache, node) +
-			nr_node_ids * sizeof(struct kmem_cache_node *);
-
-	/* Allocate two kmem_caches from the page allocator */
-	kmalloc_size = ALIGN(kmem_size, cache_line_size());
-	order = get_order(2 * kmalloc_size);
-/* LGE_CHANGE : bohyun.jung@lge.com - [2013.01.03] prevent kernel panic. from CodeAurora. 
- * 				slub: Zero initial memory segment for kmem_cache and kmem_cache_node '
- * 				http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commit;h=9df53b154ac712c87db1170057aa6df05eb7bdbd */
-#if defined (CONFIG_MACH_MSM7X27A_U0) || defined(CONFIG_MACH_MSM7X25A_V1) 
-	kmem_cache = (void *)__get_free_pages(GFP_NOWAIT | __GFP_ZERO, order);
-#else
-	kmem_cache = (void *)__get_free_pages(GFP_NOWAIT, order);
-#endif
+	kmem_cache_node = &boot_kmem_cache_node;
+	kmem_cache = &boot_kmem_cache;
 
 	create_boot_cache(kmem_cache_node, "kmem_cache_node",
 		sizeof(struct kmem_cache_node), SLAB_HWCACHE_ALIGN);
@@ -3856,30 +3850,24 @@ struct kmem_cache *__kmem_cache_alias(const char *name, size_t size,
 
 int __kmem_cache_create(struct kmem_cache *s, unsigned long flags)
 {
-	struct kmem_cache *s;
+	int err;
 
-	s = kmem_cache_alloc(kmem_cache, GFP_KERNEL);
-	if (s) {
-		if (kmem_cache_open(s, name,
-				size, align, flags, ctor)) {
-			int r;
+	err = kmem_cache_open(s, flags);
+	if (err)
+		return err;
 
-			list_add(&s->list, &slab_caches);
-			mutex_unlock(&slab_mutex);
-			r = sysfs_slab_add(s);
-			mutex_lock(&slab_mutex);
+	/* Mutex is not taken during early boot */
+	if (slab_state <= UP)
+		return 0;
 
-			if (!r)
-				return s;
-
-			list_del(&s->list);
-			kmem_cache_close(s);
-		}
-		kfree(n);
-		kfree(s);
-	}
 	mutex_unlock(&slab_mutex);
-	return s;
+	err = sysfs_slab_add(s);
+	mutex_lock(&slab_mutex);
+
+	if (err)
+		kmem_cache_close(s);
+
+	return err;
 }
 
 #ifdef CONFIG_SMP
@@ -3887,7 +3875,7 @@ int __kmem_cache_create(struct kmem_cache *s, unsigned long flags)
  * Use the cpu notifier to insure that the cpu slabs are flushed when
  * necessary.
  */
-static int __cpuinit slab_cpuup_callback(struct notifier_block *nfb,
+static int slab_cpuup_callback(struct notifier_block *nfb,
 		unsigned long action, void *hcpu)
 {
 	long cpu = (long)hcpu;
@@ -3913,7 +3901,7 @@ static int __cpuinit slab_cpuup_callback(struct notifier_block *nfb,
 	return NOTIFY_OK;
 }
 
-static struct notifier_block __cpuinitdata slab_notifier = {
+static struct notifier_block slab_notifier = {
 	.notifier_call = slab_cpuup_callback
 };
 
