@@ -214,11 +214,7 @@ static struct clkctl_acpu_speed pll0_960_pll1_245_pll2_1200_pll4_800[] = {
 	{ 1, 800000, ACPU_PLL_4, 6, 0, 100000, 3, 7, 200000 }, 
 	#endif
 	#ifdef CONFIG_MSM7X27A_OVERCLOCK
-	#ifdef CONFIG_MSM7X27A_UNDERVOLT 
-    	{ 1, 950000, ACPU_PLL_2, 2, 3, 118750, 3, 6, 200000 },
-	#else
 	{ 1, 950000, ACPU_PLL_2, 2, 3, 118750, 3, 7, 200000 },
-	#endif
 	{ 1, 1056000, ACPU_PLL_2, 2, 3, 132000, 3, 7, 200000 },	
 	#ifdef CONFIG_MSM7X27A_BACONMAKER
     	{ 1, 1094400, ACPU_PLL_2, 2, 3, 182400, 2, 7, 200000 },
