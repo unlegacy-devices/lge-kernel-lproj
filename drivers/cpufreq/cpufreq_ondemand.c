@@ -1012,14 +1012,8 @@ static void dbs_input_event(struct input_handle *handle, unsigned int type,
 		/* nothing to do */
 		return;
 	}
-
-         for_each_online_cpu(i)
-               queue_work_on(i, input_wq, &per_cpu(dbs_refresh_work, i).work);
-	if (current_sampling_rate > BOOSTED_SAMPLING_RATE) {
-		dbs_tuners_ins.sampling_rate = BOOSTED_SAMPLING_RATE;
-		sampling_rate_boosted_time = ktime_to_us(ktime_get());
-		sampling_rate_boosted = 1;
-	}
+	for_each_online_cpu(i)
+		queue_work_on(i, input_wq, &per_cpu(dbs_refresh_work, i).work);
 }
 
 

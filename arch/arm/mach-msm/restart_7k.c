@@ -1,4 +1,4 @@
-/* Copyright (c) 2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -21,7 +21,6 @@
 #include <mach/proc_comm.h>
 
 #include "devices-msm7x2xa.h"
-#include "smd_rpcrouter.h"
 
 #ifdef CONFIG_LGE_WAIT_FOR_EFS_SYNC_COMPLETE
 /*LGE_CHANGE_S: seven.kim@lge.com  21/03/2012*/
@@ -72,7 +71,8 @@ static void msm_pm_power_off(void)
 /*Wait for EFS sync comeplete while power off/ reset*/
 /*LGE_CHANGE_E: seven.kim@lge.com  21/03/2012*/
 #endif	
-
+	/* Disable interrupts */
+	local_irq_disable();
 	msm_proc_comm(PCOM_POWER_DOWN, 0, 0);
 	for (;;)
 		;

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2008-2012, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -53,6 +53,7 @@
 #define MSM8627_TOOLS_ID	4080
 #define MSM8227_TOOLS_ID	4081
 #define MSM8974_TOOLS_ID	4083
+#define MSM8625Q_TOOLS_ID	4086
 
 #define MSG_MASK_0			(0x00000001)
 #define MSG_MASK_1			(0x00000002)

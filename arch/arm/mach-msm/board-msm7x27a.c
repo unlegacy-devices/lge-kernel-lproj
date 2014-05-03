@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -778,9 +778,7 @@ static void fix_sizes(void)
 	msm_ion_audio_size = MSM_PMEM_AUDIO_SIZE;
 	msm_ion_sf_size = pmem_mdp_size;
 #ifdef CONFIG_CMA
-        if (get_ddr_size() > SZ_256M)
-                pmem_adsp_size = CAMERA_ZSL_SIZE;
-	msm_ion_camera_size = pmem_adsp_size;
+	msm_ion_camera_size = CAMERA_ZSL_SIZE;
 	msm_ion_camera_size_carving = 0;
 #else
 	msm_ion_camera_size = pmem_adsp_size;
@@ -986,10 +984,9 @@ static void __init msm7x27a_reserve(void)
 
 static void __init msm8625_reserve(void)
 {
-	msm7x27a_reserve();
 	memblock_remove(MSM8625_CPU_PHYS, SZ_8);
 	memblock_remove(MSM8625_WARM_BOOT_PHYS, SZ_32);
-	memblock_remove(MSM8625_NON_CACHE_MEM, SZ_2K);
+	msm7x27a_reserve();
 }
 
 static void __init msm7x27a_device_i2c_init(void)
@@ -1060,7 +1057,7 @@ static void msm_adsp_add_pdev(void)
 	}
 	rpc_adsp_pdev->prog = ADSP_RPC_PROG;
 
-	if (cpu_is_msm8625())
+	if (cpu_is_msm8625() || cpu_is_msm8625q())
 		rpc_adsp_pdev->pdev = msm8625_device_adsp;
 	else
 		rpc_adsp_pdev->pdev = msm_adsp_device;
@@ -1137,7 +1134,7 @@ static void __init msm7x27a_uartdm_config(void)
 {
 	msm7x27a_cfg_uart2dm_serial();
 	msm_uart_dm1_pdata.wakeup_irq = gpio_to_irq(UART1DM_RX_GPIO);
-	if (cpu_is_msm8625())
+	if (cpu_is_msm8625() || cpu_is_msm8625q())
 		msm8625_device_uart_dm1.dev.platform_data =
 			&msm_uart_dm1_pdata;
 	else
@@ -1146,7 +1143,7 @@ static void __init msm7x27a_uartdm_config(void)
 
 static void __init msm7x27a_otg_gadget(void)
 {
-	if (cpu_is_msm8625()) {
+	if (cpu_is_msm8625() || cpu_is_msm8625q()) {
 		msm_otg_pdata.swfi_latency =
 		msm8625_pm_data[MSM_PM_SLEEP_MODE_WAIT_FOR_INTERRUPT].latency;
 		msm8625_device_otg.dev.platform_data = &msm_otg_pdata;
@@ -1186,7 +1183,7 @@ static void __init msm7x2x_init(void)
 	/* Initialize regulators first so that other devices can use them */
 	msm7x27a_init_regulators();
 	msm_adsp_add_pdev();
-	if (cpu_is_msm8625())
+	if (cpu_is_msm8625() || cpu_is_msm8625q())
 		msm8625_device_i2c_init();
 	else
 		msm7x27a_device_i2c_init();

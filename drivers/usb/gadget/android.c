@@ -82,7 +82,6 @@
 #include "u_uac1.c"
 #include "f_uac1.c"
 
-
 /* LGE_CHANGE_S, for factory usb composition */
 #ifdef CONFIG_LGE_USB_GADGET_DRIVER
 #include "u_lgeusb.h"
@@ -624,10 +623,11 @@ static struct android_usb_function mbim_function = {
 
 /* PERIPHERAL AUDIO */
 static int audio_function_bind_config(struct android_usb_function *f,
-										struct usb_configuration *c)
+					  struct usb_configuration *c)
 {
 	return audio_bind_config(c);
 }
+
 static struct android_usb_function audio_function = {
 	.name		= "audio",
 	.bind_config	= audio_function_bind_config,
@@ -1458,6 +1458,7 @@ static struct android_usb_function audio_source_function = {
 	.unbind_config	= audio_source_function_unbind_config,
 	.attributes	= audio_source_function_attributes,
 };
+
 static struct android_usb_function *supported_functions[] = {
 	&mbim_function,
 	&audio_function,
@@ -1484,8 +1485,8 @@ static struct android_usb_function *supported_functions[] = {
 #ifdef CONFIG_LGE_USB_GADGET_DRIVER
        &charge_only_function,
 #endif
-       &audio_source_function,
 //[LGE_CHANGE_E], LGE AutoRun function
+	&audio_source_function,
 	NULL
 };
 
@@ -1739,7 +1740,7 @@ static ssize_t enable_store(struct device *pdev, struct device_attribute *attr,
 	struct android_usb_function *f;
 	int enabled = 0;
 	int err = 0;
-	bool audio_enabled = false; //[SR 1077716] QCT patch	
+	bool audio_enabled = false;
 
 	if (!cdev)
 		return -ENODEV;
@@ -1768,7 +1769,6 @@ static ssize_t enable_store(struct device *pdev, struct device_attribute *attr,
 		cdev->desc.bDeviceSubClass = device_desc.bDeviceSubClass;
 		cdev->desc.bDeviceProtocol = device_desc.bDeviceProtocol;
 
-//[SR 1077716] QCT patch_start
 /*
 		if(cdev->desc.idVendor == 0x18D1){
 			pr_debug("%s Accessory Connected\n",__func__);
@@ -1784,11 +1784,10 @@ static ssize_t enable_store(struct device *pdev, struct device_attribute *attr,
 			if (f->enable)
 				f->enable(f);
 			if (!strncmp(f->name, "audio_source", 12))
-			        audio_enabled = true;
+				audio_enabled = true;
 		}
 		if (audio_enabled)
-		        msleep(100);
-//[SR 1077716] QCT patch_end
+			msleep(100);
 		err = android_enable(dev);
 		if (err < 0) {
 			pr_err("%s: android_enable failed\n", __func__);
@@ -2230,6 +2229,11 @@ static void android_disconnect(struct usb_gadget *gadget)
 	unsigned long flags;
 
 	composite_disconnect(gadget);
+	/* accessory HID support can be active while the
+	   accessory function is not actually enabled,
+	   so we need to inform it when we are disconnected.
+	 */
+	acc_disconnect();
 
 	/* accessory HID support can be active while the
 	    accessory function is not actually enabled,

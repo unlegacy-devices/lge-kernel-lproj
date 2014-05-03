@@ -1,4 +1,4 @@
-/* Copyright (c) 2010-2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2010-2012, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -281,13 +281,6 @@ int scm_call_noalloc(u32 svc_id, u32 cmd_id, const void *cmd_buf,
  * @resp_len: length of the response buffer
  *
  * Sends a command to the SCM and waits for the command to finish processing.
- *
- * A note on cache maintenance:
- * Note that any buffers that are expected to be accessed by the secure world
- * must be flushed before invoking scm_call and invalidated in the cache
- * immediately after scm_call returns. Cache maintenance on the command and
- * response buffers is taken care of by scm_call; however, callers are
- * responsible for any other cached buffers passed over to the secure world.
  */
 int scm_call(u32 svc_id, u32 cmd_id, const void *cmd_buf, size_t cmd_len,
 		void *resp_buf, size_t resp_len)

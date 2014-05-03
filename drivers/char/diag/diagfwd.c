@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2008-2012, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -149,6 +149,8 @@ int chk_config_get_id(void)
 			return MSM8974_TOOLS_ID;
 		case MSM_CPU_8625:
 			return MSM8625_TOOLS_ID;
+		case MSM_CPU_8625Q:
+			return MSM8625Q_TOOLS_ID;
 		default:
 			return 0;
 		}
@@ -620,11 +622,11 @@ static void diag_update_msg_mask(int start, int end , uint8_t *buf)
 				*(uint32_t *)(actual_last_ptr) = end;
 			}
 			if (CHK_OVERFLOW(ptr_buffer_start, ptr, ptr_buffer_end,
-						  (((end - start)+1)*4))) {
+					  (((end - start)+1)*4))) {
 				pr_debug("diag: update ssid start %d, end %d\n",
 								 start, end);
-					memcpy(ptr, buf , ((end - start)+1)*4);
-				} else
+				memcpy(ptr, buf , ((end - start)+1)*4);
+			} else
 				pr_alert("diag: Not enough space MSG_MASK\n");
 			found = 1;
 			break;

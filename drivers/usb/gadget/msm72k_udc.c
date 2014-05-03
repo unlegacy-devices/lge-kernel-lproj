@@ -2,7 +2,7 @@
  * Driver for HighSpeed USB Client Controller in MSM7K
  *
  * Copyright (C) 2008 Google, Inc.
- * Copyright (c) 2009-2012, Code Aurora Forum. All rights reserved.
+ * Copyright (c) 2009-2013, The Linux Foundation. All rights reserved.
  * Author: Mike Lockwood <lockwood@android.com>
  *         Brian Swetland <swetland@google.com>
  *
@@ -641,10 +641,10 @@ static void config_ept(struct msm_endpoint *ept)
 	unsigned mult = 0;
 
 	if (desc && ((desc->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK)
-					== USB_ENDPOINT_XFER_ISOC)) {
-			cfg &= ~(CONFIG_MULT);
-			mult = ((ept->ep.maxpacket >> CONFIG_MULT_SHIFT) + 1) & 0x03;
-			cfg |= (mult << (ffs(CONFIG_MULT) - 1));
+				== USB_ENDPOINT_XFER_ISOC)) {
+		cfg &= ~(CONFIG_MULT);
+		mult = ((ept->ep.maxpacket >> CONFIG_MULT_SHIFT) + 1) & 0x03;
+		cfg |= (mult << (ffs(CONFIG_MULT) - 1));
 	}
 
 	/* ep0 out needs interrupt-on-setup */
@@ -1379,6 +1379,9 @@ static void flush_endpoint_sw(struct msm_endpoint *ept)
 	struct usb_info *ui = ept->ui;
 	struct msm_request *req, *next_req = NULL;
 	unsigned long flags;
+
+	if (!ept->req)
+		return;
 
 	/* inactive endpoints have nothing to do here */
 	if (ept->ep.maxpacket == 0)
@@ -2439,6 +2442,9 @@ msm72k_queue(struct usb_ep *_ep, struct usb_request *req, gfp_t gfp_flags)
 	struct msm_endpoint *ep = to_msm_endpoint(_ep);
 	struct usb_info *ui = ep->ui;
 
+	if (!atomic_read(&ui->softconnect))
+		return -ENODEV;
+
 	if (ep == &ui->ep0in) {
 		struct msm_request *r = to_msm_request(req);
 		if (!req->length)
@@ -2465,6 +2471,13 @@ static int msm72k_dequeue(struct usb_ep *_ep, struct usb_request *_req)
 
 	struct msm_request *temp_req;
 	unsigned long flags;
+
+	if (ep->num == 0) {
+		/* Flush both out and in control endpoints */
+		flush_endpoint(&ui->ep0out);
+		flush_endpoint(&ui->ep0in);
+		return 0;
+	}
 
 	if (!(ui && req && ep->req))
 		return -EINVAL;

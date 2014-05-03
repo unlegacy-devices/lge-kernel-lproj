@@ -1,4 +1,4 @@
-/* Copyright (c) 2009-2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2009-2012, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -832,6 +832,9 @@ struct msm_snapshot_pp_status {
 #define CFG_MAX			49 //48 // 47
 /* LGE_CHANGE_E : 2012-10-26 hong.junki@lge.com V3 need to get snapshot data from SOC sensor */
 /* LGE_CHANGE_E : 2012-10-09 sungmin.cho@lge.com vt camera touch aec */
+#define CFG_SENSOR_PIP_SET_CAM_MODE   47
+#define CFG_SENSOR_PIP_GET_CAM_MODE   48
+#define CFG_MAX			49
 
 #define MOVE_NEAR	0
 #define MOVE_FAR	1
@@ -867,6 +870,11 @@ struct msm_snapshot_pp_status {
 #define CAMERA_EFFECT_BLUISH	12
 #define CAMERA_EFFECT_REDDISH	13
 #define CAMERA_EFFECT_GREENISH	14
+
+/* PIP working mode */
+#define CAM_WORKING_MODE_NORMAL     0
+#define CAM_WORKING_MODE_PIP        1
+
 
 /* QRD */
 #define CAMERA_ANTIBANDING_OFF		0
@@ -1383,6 +1391,7 @@ struct sensor_cfg_data {
 		uint8_t saturation;
 		uint8_t sharpness;
 		int8_t brightness;
+		int32_t pip_mode;
 		int ae_mode;
 		uint8_t wb_val;
 		int8_t exp_compensation;
@@ -1422,6 +1431,7 @@ enum msm_actuator_addr_type {
 enum msm_actuator_write_type {
 	MSM_ACTUATOR_WRITE_HW_DAMP,
 	MSM_ACTUATOR_WRITE_DAC,
+	MSM_ACTUATOR_WRITE_DAC_AD5823,
 };
 
 struct msm_actuator_reg_params_t {
@@ -1501,6 +1511,7 @@ enum af_camera_name {
 	ACTUATOR_MAIN_CAM_4,
 	ACTUATOR_MAIN_CAM_5,
 	ACTUATOR_MAIN_CAM_6,
+	ACTUATOR_MAIN_CAM_7,
 	ACTUATOR_WEB_CAM_0,
 	ACTUATOR_WEB_CAM_1,
 	ACTUATOR_WEB_CAM_2,

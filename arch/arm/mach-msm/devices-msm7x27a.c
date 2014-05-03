@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -35,6 +35,7 @@
 #include "devices-msm7x2xa.h"
 #include "footswitch.h"
 #include "acpuclock.h"
+#include "acpuclock-8625q.h"
 #include "spm.h"
 #include "mpm-8625.h"
 #include "irq.h"
@@ -55,6 +56,7 @@
 
 /* Reset Address of RBCPR (Active Low)*/
 #define RBCPR_SW_RESET_N       (MSM_CSR_BASE + 0x64)
+#define RBCPR_SW_RESET_N_8625Q	(MSM_CSR_BASE + 0x28)
 
 static struct resource gsbi0_qup_i2c_resources[] = {
 	{
@@ -237,6 +239,21 @@ struct platform_device msm7x27aa_device_acpuclk = {
 	.name		= "acpuclk-7627",
 	.id		= -1,
 	.dev.platform_data = &msm7x27aa_acpuclk_pdata,
+};
+
+static struct acpuclk_pdata msm8625q_pdata = {
+	.max_speed_delta_khz = 801600,
+};
+
+static struct acpuclk_pdata_8625q msm8625q_acpuclk_pdata = {
+	.acpu_clk_data = &msm8625q_pdata,
+	.pvs_voltage_uv = 1350000,
+};
+
+struct platform_device msm8625q_device_acpuclk = {
+	.name		= "acpuclock-8625q",
+	.id		= -1,
+	.dev.platform_data = &msm8625q_acpuclk_pdata,
 };
 
 static struct acpuclk_pdata msm8625_acpuclk_pdata = {
@@ -514,7 +531,7 @@ void msm_clk_dump_debug_info(void)
 
 void __init msm_pm_register_irqs(void)
 {
-	if (cpu_is_msm8625())
+	if (cpu_is_msm8625() || cpu_is_msm8625q())
 		msm_pm_set_irq_extns(&msm8625_pm_irq_calls);
 	else
 		msm_pm_set_irq_extns(&msm7x27a_pm_irq_calls);
@@ -529,8 +546,9 @@ static struct msm_pm_cpr_ops msm8625_pm_cpr_ops = {
 void __init msm_pm_register_cpr_ops(void)
 {
 	/* CPR presents on revision >= v2.0 chipsets */
-	if (cpu_is_msm8625() &&
+	if ((cpu_is_msm8625() &&
 			SOCINFO_VERSION_MAJOR(socinfo_get_version()) >= 2)
+			|| cpu_is_msm8625q())
 		msm_pm_set_cpr_ops(&msm8625_pm_cpr_ops);
 }
 
@@ -783,6 +801,16 @@ static struct msm_spm_seq_entry msm_spm_seq_list[] __initdata = {
 		.notify_rpm = false,
 		.cmd = spm_pc_without_modem,
 	},
+	[2] = {
+		.mode = MSM_SPM_MODE_POWER_COLLAPSE,
+		.notify_rpm = false,
+		.cmd = spm_pc_without_modem,
+	},
+	[3] = {
+		.mode = MSM_SPM_MODE_POWER_COLLAPSE,
+		.notify_rpm = false,
+		.cmd = spm_pc_without_modem,
+	},
 };
 
 static struct msm_spm_platform_data msm_spm_data[] __initdata = {
@@ -795,6 +823,20 @@ static struct msm_spm_platform_data msm_spm_data[] __initdata = {
 	},
 	[1] = {
 		.reg_base_addr = MSM_SAW1_BASE,
+		.reg_init_values[MSM_SPM_REG_SAW2_CFG] = 0x0,
+		.reg_init_values[MSM_SPM_REG_SAW2_SPM_CTL] = 0x01,
+		.num_modes = ARRAY_SIZE(msm_spm_seq_list),
+		.modes = msm_spm_seq_list,
+	},
+	[2] = {
+		.reg_base_addr = MSM_SAW2_BASE,
+		.reg_init_values[MSM_SPM_REG_SAW2_CFG] = 0x0,
+		.reg_init_values[MSM_SPM_REG_SAW2_SPM_CTL] = 0x01,
+		.num_modes = ARRAY_SIZE(msm_spm_seq_list),
+		.modes = msm_spm_seq_list,
+	},
+	[3] = {
+		.reg_base_addr = MSM_SAW3_BASE,
 		.reg_init_values[MSM_SPM_REG_SAW2_CFG] = 0x0,
 		.reg_init_values[MSM_SPM_REG_SAW2_SPM_CTL] = 0x01,
 		.num_modes = ARRAY_SIZE(msm_spm_seq_list),
@@ -965,10 +1007,10 @@ void __init msm7x25a_kgsl_3d0_init(void)
 
 void __init msm8x25_kgsl_3d0_init(void)
 {
-	if (cpu_is_msm8625()) {
-		kgsl_3d0_pdata.idle_timeout = HZ/5;
-		kgsl_3d0_pdata.strtstp_sleepwake = false;
+	kgsl_3d0_pdata.idle_timeout = HZ/5;
+	kgsl_3d0_pdata.strtstp_sleepwake = false;
 
+	if (cpu_is_msm8625()) {
 		if (SOCINFO_VERSION_MAJOR(socinfo_get_version()) >= 2)
 			/* 8x25 v2.0 & above supports a higher GPU frequency */
 			kgsl_3d0_pdata.pwrlevel[0].gpu_freq = 320000000;
@@ -976,7 +1018,22 @@ void __init msm8x25_kgsl_3d0_init(void)
 			kgsl_3d0_pdata.pwrlevel[0].gpu_freq = 300000000;
 
 		kgsl_3d0_pdata.pwrlevel[0].bus_freq = 200000000;
+	} else	if (cpu_is_msm8625q()) {
+			kgsl_3d0_pdata.num_levels = 4;
+
+			kgsl_3d0_pdata.pwrlevel[0].gpu_freq = 400000000;
+			kgsl_3d0_pdata.pwrlevel[0].bus_freq = 300000000;
+
+			kgsl_3d0_pdata.pwrlevel[1].gpu_freq = 320000000;
+			kgsl_3d0_pdata.pwrlevel[1].bus_freq = 300000000;
+
+			kgsl_3d0_pdata.pwrlevel[2].gpu_freq = 245760000;
+			kgsl_3d0_pdata.pwrlevel[2].bus_freq = 160000000;
+
+			kgsl_3d0_pdata.pwrlevel[3].gpu_freq = 133000000;
+			kgsl_3d0_pdata.pwrlevel[3].bus_freq = 0;
 	}
+
 }
 
 static void __init msm_register_device(struct platform_device *pdev, void *data)
@@ -1413,7 +1470,7 @@ int __init msm_add_sdcc(unsigned int controller, struct mmc_platform_data *plat)
 	if (controller < 1 || controller > 4)
 		return -EINVAL;
 
-	if (cpu_is_msm8625())
+	if (cpu_is_msm8625() || cpu_is_msm8625q())
 		pdev = msm8625_sdcc_devices[controller-1];
 	else
 		pdev = msm_sdcc_devices[controller-1];
@@ -1502,7 +1559,7 @@ int msm_add_host(unsigned int host, struct msm_usb_host_platform_data *plat)
 {
 	struct platform_device	*pdev;
 
-	if (cpu_is_msm8625())
+	if (cpu_is_msm8625() || cpu_is_msm8625q())
 		pdev = msm8625_host_devices[host];
 	else
 		pdev = msm_host_devices[host];
@@ -1605,12 +1662,12 @@ struct platform_device mipi_dsi_device;
 void __init msm_fb_register_device(char *name, void *data)
 {
 	if (!strncmp(name, "mdp", 3)) {
-		if (cpu_is_msm8625())
+		if (cpu_is_msm8625() || cpu_is_msm8625q())
 			msm_register_device(&msm8625_mdp_device, data);
 		else
 			msm_register_device(&msm_mdp_device, data);
 	} else if (!strncmp(name, "mipi_dsi", 8)) {
-		if (cpu_is_msm8625()) {
+		if (cpu_is_msm8625() || cpu_is_msm8625q()) {
 			msm_register_device(&msm8625_mipi_dsi_device, data);
 			mipi_dsi_device = msm8625_mipi_dsi_device;
 		} else {
@@ -1704,6 +1761,8 @@ static int __init msm8625_cpu_id(void)
 	case 0x774:
 	case 0x781:
 	case 0x8D1:
+	case 0x8E0:
+	case 0x8E1:
 		cpu = MSM8625A;
 		break;
 	case 0x775:
@@ -1749,52 +1808,26 @@ static uint32_t msm_c2_pmic_mv[] __initdata = {
 /**
  * This data will be based on CPR mode of operation
  */
-static struct msm_cpr_mode msm_cpr_mode_data[] = {
-	[NORMAL_MODE] = {
-			.ring_osc_data = {
-				{0, },
-				{0, },
-				{0, },
-				{0, },
-				{0, },
-				{0, },
-				{0, },
-				{0, },
-			},
-			.ring_osc = 0,
-			.step_quot = ~0,
-			.tgt_volt_offset = 0,
-			.nom_Vmax = 1350000,
-			.nom_Vmin = 1250000,
-			.calibrated_uV = 1100000,
-	},
-	[TURBO_MODE] = {
-			.ring_osc_data = {
-				{0, },
-				{0, },
-				{0, },
-				{0, },
-				{0, },
-				{0, },
-				{0, },
-				{0, },
-			},
-			.ring_osc = 0,
-			.step_quot = ~0,
-			.tgt_volt_offset = 0,
-			.turbo_Vmax = 1350000,
-			.turbo_Vmin = 1150000,
-			.nom_Vmax = 1350000,
-			.nom_Vmin = 1150000,
-			.calibrated_uV = 1300000,
-	},
-};
-
-struct msm_cpr_vp_data vp_data = {
-	.min_volt = 1000000,
-	.max_volt = 1350000,
-	.default_volt = 1300000,
-	.step_size = 12500,
+static struct msm_cpr_mode msm_cpr_mode_data = {
+	.ring_osc_data = {
+			{0, },
+			{0, },
+			{0, },
+			{0, },
+			{0, },
+			{0, },
+			{0, },
+			{0, },
+		},
+	.ring_osc = 0,
+	.step_quot = ~0,
+	.step_div = 1,
+	.tgt_volt_offset = 0,
+	.turbo_Vmax = 1350000,
+	.turbo_Vmin = 1150000,
+	.nom_Vmax = 1350000,
+	.nom_Vmin = 1150000,
+	.calibrated_uV = 1300000,
 };
 
 static uint32_t
@@ -1818,14 +1851,28 @@ static void msm_cpr_clk_enable(void)
 	writel_relaxed(reg_val, A11S_TEST_BUS_SEL_ADDR);
 
 	/* Get CPR out of reset */
-	writel_relaxed(0x1, RBCPR_SW_RESET_N);
+	if(cpu_is_msm8625q()) {
+		writel_relaxed(0x1, RBCPR_SW_RESET_N_8625Q);
+	} else {
+		writel_relaxed(0x1, RBCPR_SW_RESET_N);
+	}
+}
+
+static void msm_cpr_reset(void)
+{
+	/* Put CPR in reset */
+	if(cpu_is_msm8625q()) {
+		writel_relaxed(0x0, RBCPR_SW_RESET_N_8625Q);
+	} else {
+		writel_relaxed(0x0, RBCPR_SW_RESET_N);
+	}
 }
 
 static struct msm_cpr_config msm_cpr_pdata = {
 	.ref_clk_khz = 19200,
 	.delay_us = 25000,
 	.irq_line = 0,
-	.cpr_mode_data = msm_cpr_mode_data,
+	.cpr_mode_data = &msm_cpr_mode_data,
 	.tgt_count_div_N = 1,
 	.floor = 0,
 	.ceiling = 40,
@@ -1838,9 +1885,10 @@ static struct msm_cpr_config msm_cpr_pdata = {
 	.max_freq = 1401600,
 	.max_quot = 0,
 	.disable_cpr = false,
-	.vp_data = &vp_data,
+	.step_size = 12500,
 	.get_quot = msm_cpr_get_quot,
 	.clk_enable = msm_cpr_clk_enable,
+	.cpr_reset = msm_cpr_reset,
 };
 
 static struct platform_device msm8625_device_cpr = {
@@ -1871,6 +1919,7 @@ static void __init msm_cpr_init(void)
 
 	msm_smem_get_cpr_info(cpr_info);
 	msm_cpr_pdata.disable_cpr = cpr_info->disable_cpr;
+	msm_cpr_pdata.pvs_fuse = cpr_info->pvs_fuse;
 
 	/**
 	 * Set the ring_osc based on efuse BIT(0)
@@ -1882,12 +1931,10 @@ static void __init msm_cpr_init(void)
 	else if (cpr_info->ring_osc == 0x1)
 		ring_osc = 0x3;
 
-	msm_cpr_mode_data[TURBO_MODE].ring_osc = ring_osc;
-	msm_cpr_mode_data[NORMAL_MODE].ring_osc = ring_osc;
+	msm_cpr_mode_data.ring_osc = ring_osc;
 
 	/* GCNT = 1000 nsec/52nsec (@TCX0=19.2Mhz) = 19.2 */
-	msm_cpr_mode_data[TURBO_MODE].ring_osc_data[ring_osc].gcnt = 19;
-	msm_cpr_mode_data[NORMAL_MODE].ring_osc_data[ring_osc].gcnt = 19;
+	msm_cpr_mode_data.ring_osc_data[ring_osc].gcnt = 19;
 
 	/**
 	 * The scaling factor and offset are as per chip characterization data
@@ -1902,11 +1949,11 @@ static void __init msm_cpr_init(void)
 	 * a 1.2GHz part by a chip characterization recommended value.
 	 * Ditto for a 1.0GHz part.
 	 */
-	if (msm8625_cpu_id() == MSM8625A) {
+	if ((msm8625_cpu_id() == MSM8625A) && !cpu_is_msm8625q()) {
 		msm_cpr_pdata.max_quot += 30;
 		if (msm_cpr_pdata.max_quot > 1400)
 			msm_cpr_pdata.max_quot = 1400;
-	} else if (msm8625_cpu_id() == MSM8625) {
+	} else if ((msm8625_cpu_id() == MSM8625) && !cpu_is_msm8625q()) {
 		msm_cpr_pdata.max_quot += 50;
 		if (msm_cpr_pdata.max_quot > 1350)
 			msm_cpr_pdata.max_quot = 1350;
@@ -1916,45 +1963,83 @@ static void __init msm_cpr_init(void)
 	 * Bits 4:0 of pvs_fuse provide mapping to the safe boot up voltage.
 	 * Boot up mode is by default Turbo.
 	 */
-	msm_cpr_mode_data[TURBO_MODE].calibrated_uV =
+	msm_cpr_mode_data.calibrated_uV =
 				msm_c2_pmic_mv[cpr_info->pvs_fuse & 0x1F];
 
-	if ((cpr_info->floor_fuse & 0x3) == 0x0) {
-		msm_cpr_mode_data[TURBO_MODE].nom_Vmin = 1000000;
-		msm_cpr_mode_data[TURBO_MODE].turbo_Vmin = 1100000;
-	} else if ((cpr_info->floor_fuse & 0x3) == 0x1) {
-		msm_cpr_mode_data[TURBO_MODE].nom_Vmin = 1050000;
-		msm_cpr_mode_data[TURBO_MODE].turbo_Vmin = 1100000;
-	} else if ((cpr_info->floor_fuse & 0x3) == 0x2) {
-		msm_cpr_mode_data[TURBO_MODE].nom_Vmin = 1100000;
-		msm_cpr_mode_data[TURBO_MODE].turbo_Vmin = 1100000;
+	if (cpu_is_msm8625q()) {
+		msm_cpr_mode_data.nom_Vmin = 950000;
+		msm_cpr_mode_data.turbo_Vmin = 1100000;
+	} else {
+		if ((cpr_info->floor_fuse & 0x3) == 0x0) {
+			msm_cpr_mode_data.nom_Vmin = 1000000;
+			msm_cpr_mode_data.turbo_Vmin = 1100000;
+		} else if ((cpr_info->floor_fuse & 0x3) == 0x1) {
+			msm_cpr_mode_data.nom_Vmin = 1050000;
+			msm_cpr_mode_data.turbo_Vmin = 1100000;
+		} else if ((cpr_info->floor_fuse & 0x3) == 0x2) {
+			msm_cpr_mode_data.nom_Vmin = 1100000;
+			msm_cpr_mode_data.turbo_Vmin = 1100000;
+		}
 	}
 
-	pr_info("%s: cpr: ring_osc: 0x%x\n", __func__,
-		msm_cpr_mode_data[TURBO_MODE].ring_osc);
+	pr_debug("%s: cpr: ring_osc: 0x%x\n", __func__,
+		msm_cpr_mode_data.ring_osc);
 	pr_info("%s: cpr: turbo_quot: 0x%x\n", __func__, cpr_info->turbo_quot);
 	pr_info("%s: cpr: pvs_fuse: 0x%x\n", __func__, cpr_info->pvs_fuse);
 	pr_info("%s: cpr: floor_fuse: 0x%x\n", __func__, cpr_info->floor_fuse);
 	kfree(cpr_info);
 
-	if (msm8625_cpu_id() == MSM8625A)
+	if ((msm8625_cpu_id() == MSM8625A) || cpu_is_msm8625q())
 		msm_cpr_pdata.max_freq = 1209600;
 	else if (msm8625_cpu_id() == MSM8625) {
 		msm_cpr_pdata.max_freq = 1008000;
-		msm_cpr_mode_data[TURBO_MODE].turbo_Vmin = 1175000;
+		msm_cpr_mode_data.turbo_Vmin = 1175000;
 	}
 
 	pr_info("%s: cpr: nom_Vmin: %d, turbo_Vmin: %d\n", __func__,
-		msm_cpr_mode_data[TURBO_MODE].nom_Vmin,
-		msm_cpr_mode_data[TURBO_MODE].turbo_Vmin);
+		msm_cpr_mode_data.nom_Vmin,
+		msm_cpr_mode_data.turbo_Vmin);
 	pr_info("%s: cpr: nom_Vmax: %d, turbo_Vmax: %d\n", __func__,
-		msm_cpr_mode_data[TURBO_MODE].nom_Vmax,
-		msm_cpr_mode_data[TURBO_MODE].turbo_Vmax);
+		msm_cpr_mode_data.nom_Vmax,
+		msm_cpr_mode_data.turbo_Vmax);
 
-	msm_cpr_clk_enable();
+	if (cpu_is_msm8625())
+		platform_device_register(&msm8625_vp_device);
 
-	platform_device_register(&msm8625_vp_device);
 	platform_device_register(&msm8625_device_cpr);
+}
+
+static struct resource pbus_resources[] = {
+{
+		.name   = "pbus_phys_addr",
+		.start  = MSM7XXX_PBUS_PHYS,
+		.end    = MSM7XXX_PBUS_PHYS + SZ_4K - 1,
+		.flags  = IORESOURCE_MEM,
+	},
+	{
+		.name	= "pbus_intr",
+		.start	= INT_PBUS_ARM11,
+		.flags	= IORESOURCE_IRQ,
+	},
+};
+
+struct platform_device msm_device_pbus = {
+	.name           = "msm_pbus",
+	.num_resources  = ARRAY_SIZE(pbus_resources),
+	.resource       = pbus_resources,
+};
+
+static void __init msm_pbus_init(void)
+{
+	if (cpu_is_msm8625() || cpu_is_msm8625q())
+		pbus_resources[1].start = MSM8625_INT_PBUS_ARM11;
+	platform_device_register(&msm_device_pbus);
+}
+
+static void __init msm_pm_memory_reserve(void)
+{
+	virt_start_ptr = ioremap_nocache(MSM8625_NON_CACHE_MEM, SZ_2K);
+	memset(virt_start_ptr, 0x0, SZ_2K);
 }
 
 static struct clk_lookup msm_clock_8625_dummy[] = {
@@ -2030,8 +2115,11 @@ static int __init msm_gpio_config_gps(void)
 	unsigned int gps_gpio = 7;
 	int ret = 0;
 
-	if (!machine_is_msm8625_evb())
+	if (!machine_is_msm8625_evb() && !machine_is_msm8625q_evbd())
 		return ret;
+
+	if (machine_is_msm8625q_evbd())
+		gps_gpio = 49;
 
 	ret = gpio_tlmm_config(GPIO_CFG(gps_gpio, 0, GPIO_CFG_OUTPUT,
 			GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA), GPIO_CFG_ENABLE);
@@ -2059,6 +2147,22 @@ static int __init msm_gpio_config_gps(void)
 	return ret;
 }
 
+static int __init msm_acpuclock_init(bool flag)
+{
+	struct cpr_info_type *acpu_info = NULL;
+	acpu_info = kzalloc(sizeof(struct cpr_info_type), GFP_KERNEL);
+	if (!acpu_info) {
+		pr_err("%s: Out of memory %d\n", __func__, -ENOMEM);
+		return -ENOMEM;
+	}
+	msm_smem_get_cpr_info(acpu_info);
+	msm8625q_acpuclk_pdata.pvs_voltage_uv =
+			msm_c2_pmic_mv[acpu_info->pvs_fuse & 0x1F];
+	kfree(acpu_info);
+	msm8625q_acpuclk_pdata.flag = flag;
+	return 0;
+}
+
 int __init msm7x2x_misc_init(void)
 {
 	if (machine_is_msm8625_rumi3()) {
@@ -2067,11 +2171,19 @@ int __init msm7x2x_misc_init(void)
 		return 0;
 	}
 
+
 	msm_clock_init(&msm7x27a_clock_init_data);
 	if (cpu_is_msm7x27aa() || cpu_is_msm7x25ab())
 		platform_device_register(&msm7x27aa_device_acpuclk);
-	else if (cpu_is_msm8625()) {
-		if (msm8625_cpu_id() == MSM8625)
+	else if (cpu_is_msm8625q()) {
+		msm_acpuclock_init(1);
+		platform_device_register(&msm8625q_device_acpuclk);
+	} else if (cpu_is_msm8625()) {
+
+		if (machine_is_qrd_skud_prime()) {
+			msm_acpuclock_init(0);
+			platform_device_register(&msm8625q_device_acpuclk);
+		} else if (msm8625_cpu_id() == MSM8625)
 			platform_device_register(&msm7x27aa_device_acpuclk);
 		else if (msm8625_cpu_id() == MSM8625A)
 			platform_device_register(&msm8625_device_acpuclk);
@@ -2081,15 +2193,21 @@ int __init msm7x2x_misc_init(void)
 		platform_device_register(&msm7x27a_device_acpuclk);
 	}
 
-	if (cpu_is_msm8625() &&
-			(SOCINFO_VERSION_MAJOR(socinfo_get_version()) >= 2))
+	/*
+	 * Remove the memory block @ 0xFC00000 to log debug information
+	 */
+	msm_pm_memory_reserve();
+
+	if (cpu_is_msm8625q() || (cpu_is_msm8625() &&
+			(SOCINFO_VERSION_MAJOR(socinfo_get_version()) >= 2)))
 		msm_cpr_init();
 
-	if (!cpu_is_msm8625())
+	if (!cpu_is_msm8625() && !cpu_is_msm8625q())
 		pl310_resources[1].start = INT_L2CC_INTR;
 
 	platform_device_register(&pl310_erp_device);
 
+	msm_pbus_init();
 	if (msm_gpio_config_gps() < 0)
 		pr_err("Error for gpio config for GPS gpio\n");
 
@@ -2107,7 +2225,7 @@ static int __init msm7x27x_cache_init(void)
 		   (0x2 << L2X0_AUX_CTRL_WAY_SIZE_SHIFT) | \
 		   (0x1 << L2X0_AUX_CTRL_EVNT_MON_BUS_EN_SHIFT);
 
-	if (cpu_is_msm8625()) {
+	if (cpu_is_msm8625() || cpu_is_msm8625q()) {
 		/* Way Size 011(0x3) 64KB */
 		aux_ctrl |= (0x3 << L2X0_AUX_CTRL_WAY_SIZE_SHIFT) | \
 			    (0x1 << L2X0_AUX_CTRL_DATA_PREFETCH_SHIFT) | \
@@ -2123,7 +2241,7 @@ static int __init msm7x27x_cache_init(void)
 	}
 
 	l2x0_init(MSM_L2CC_BASE, aux_ctrl, L2X0_AUX_CTRL_MASK);
-	if (cpu_is_msm8625()) {
+	if (cpu_is_msm8625() || cpu_is_msm8625q()) {
 		pctrl = readl_relaxed(MSM_L2CC_BASE + L2X0_PREFETCH_CTRL);
 		pr_info("Prfetch Ctrl: 0x%08x\n", pctrl);
 	}
@@ -2164,7 +2282,7 @@ void __init msm8625_map_io(void)
 
 static int msm7627a_init_gpio(void)
 {
-	if (cpu_is_msm8625())
+	if (cpu_is_msm8625() || cpu_is_msm8625q())
 		platform_device_register(&msm8625_device_gpio);
 	else
 		platform_device_register(&msm_device_gpio);

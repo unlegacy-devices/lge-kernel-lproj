@@ -3,7 +3,7 @@
  * MSM7K, QSD io support
  *
  * Copyright (C) 2007 Google, Inc.
- * Copyright (c) 2008-2012, Code Aurora Forum. All rights reserved.
+ * Copyright (c) 2008-2012, The Linux Foundation. All rights reserved.
  * Author: Brian Swetland <swetland@google.com>
  *
  * This software is licensed under the terms of the GNU General Public
@@ -427,6 +427,8 @@ static struct map_desc msm8625_io_desc[] __initdata = {
 	MSM_CHIP_DEVICE(CLK_CTL, MSM8625),
 	MSM_CHIP_DEVICE(SAW0, MSM8625),
 	MSM_CHIP_DEVICE(SAW1, MSM8625),
+	MSM_CHIP_DEVICE(SAW2, MSM8625),
+	MSM_CHIP_DEVICE(SAW3, MSM8625),
 	MSM_CHIP_DEVICE(AD5, MSM7XXX),
 	MSM_CHIP_DEVICE(MDC, MSM7XXX),
 #if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
