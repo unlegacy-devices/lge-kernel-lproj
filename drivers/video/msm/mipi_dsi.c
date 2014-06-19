@@ -165,11 +165,8 @@ static int mipi_dsi_off(struct platform_device *pdev)
 
 	ret = panel_next_off(pdev);
 
-#ifdef CONFIG_MSM_BUS_SCALING
-	mdp_bus_scale_update_request(0);
-#endif
-
 	spin_lock_bh(&dsi_clk_lock);
+
 	mipi_dsi_clk_disable();
 
 	/* disbale dsi engine */
@@ -212,6 +209,7 @@ static int mipi_dsi_off(struct platform_device *pdev)
 /* LGE_CHANGE_E jungrock.oh@lge.com 2013-01-15 add featuring for booting animation sometimes no display*/
 	if(!lglogo_firstboot)
 		mipi_dsi_unprepare_clocks();
+                mipi_dsi_unprepare_ahb_clocks();
 		lglogo_firstboot=false;
 #endif
 #endif
@@ -269,7 +267,7 @@ static int mipi_dsi_on(struct platform_device *pdev)
 	/*[LGSI_SP4_BSP_END] [kiran.jainapure@lge.com]*/
 	
 	cont_splash_clk_ctrl(0);
-	mipi_dsi_prepare_clocks();
+	mipi_dsi_prepare_ahb_clocks();
 
 	mipi_dsi_ahb_ctrl(1);
 
@@ -421,10 +419,6 @@ static int mipi_dsi_on(struct platform_device *pdev)
 		}
 	}
 
-#ifdef CONFIG_MSM_BUS_SCALING
-	mdp_bus_scale_update_request(2);
-#endif
-
 	mdp4_overlay_dsi_state_set(ST_DSI_RESUME);
 
 	if (mdp_rev >= MDP_REV_41)
@@ -542,11 +536,13 @@ static int mipi_dsi_probe(struct platform_device *pdev)
 
 		if (mipi_dsi_pdata->splash_is_enabled &&
 			!mipi_dsi_pdata->splash_is_enabled()) {
+                        mipi_dsi_prepare_ahb_clocks();
 			mipi_dsi_ahb_ctrl(1);
 			MIPI_OUTP(MIPI_DSI_BASE + 0x118, 0);
 			MIPI_OUTP(MIPI_DSI_BASE + 0x0, 0);
 			MIPI_OUTP(MIPI_DSI_BASE + 0x200, 0);
 			mipi_dsi_ahb_ctrl(0);
+                        mipi_dsi_unprepare_ahb_clocks();
 		}
 		mipi_dsi_resource_initialized = 1;
 

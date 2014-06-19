@@ -1,5 +1,4 @@
-
-/* Copyright (c) 2011, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -11,16 +10,11 @@
  * GNU General Public License for more details.
  *
  */
-#ifndef __MHL_API_H__
-#define __MHL_API_H__
 
-#ifdef CONFIG_FB_MSM_HDMI_MHL_8334
-bool mhl_is_connected(void);
-#else
-static bool mhl_is_connected(void)
-{
-	return false;
-}
-#endif
+#ifndef MIPI_NT35590_H
+#define MIPI_NT35590_H
 
-#endif /* __MHL_API_H__ */
+int mipi_nt35590_device_register(struct msm_panel_info *pinfo,
+					u32 channel, u32 panel);
+
+#endif  /* MIPI_NT35590_H */

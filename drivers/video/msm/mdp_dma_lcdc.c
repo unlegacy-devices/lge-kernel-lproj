@@ -1,4 +1,5 @@
-/* Copyright (c) 2008-2009, 2012-2013 The Linux Foundation. All rights reserved.
+/*
+ * Copyright (c) 2008-2009, 2012-2013 The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -64,7 +65,7 @@ ssize_t mdp_dma_lcdc_show_event(struct device *dev,
 
 	wait_for_completion(&vsync_cntrl.vsync_wait);
 	ret = snprintf(buf, PAGE_SIZE, "VSYNC=%llu",
-	ktime_to_ns(vsync_cntrl.vsync_time));
+			ktime_to_ns(vsync_cntrl.vsync_time));
 	buf[strlen(buf) + 1] = '\0';
 	return ret;
 }
@@ -309,10 +310,10 @@ int mdp_lcdc_on(struct platform_device *pdev)
 		MDP_OUTP(MDP_BASE + timer_base, 1);
 		mdp_pipe_ctrl(block, MDP_BLOCK_POWER_ON, FALSE);
 	}
+	mdp_histogram_ctrl_all(TRUE);
 	/* MDP cmd block disable */
 	mdp_pipe_ctrl(MDP_CMD_BLOCK, MDP_BLOCK_POWER_OFF, FALSE);
 
-        mdp_histogram_ctrl_all(TRUE);
 
 	return ret;
 }
@@ -354,9 +355,6 @@ int mdp_lcdc_off(struct platform_device *pdev)
 	return ret;
 }
 
-// QCT_PATCH_S, SR#01031271 bohyun.jung@lge.com
-// SR 01031271 - 'mdp_disable_irq_nosync: MDP IRQ term-0x1000 is NOT set, mask=1 irq=1' 
-#if 1
 void mdp_dma_lcdc_vsync_ctrl(int enable)
 {
 	unsigned long flag;
@@ -369,61 +367,25 @@ void mdp_dma_lcdc_vsync_ctrl(int enable)
 		INIT_COMPLETION(vsync_cntrl.vsync_wait);
 
 	vsync_cntrl.vsync_irq_enabled = enable;
-	disabled_clocks = vsync_cntrl.disabled_clocks;
-	spin_unlock_irqrestore(&mdp_spin_lock, flag);
-
-	if (enable && disabled_clocks) 
-		mdp_pipe_ctrl(MDP_CMD_BLOCK, MDP_BLOCK_POWER_ON, FALSE);
-		
-	spin_lock_irqsave(&mdp_spin_lock, flag);
-	if (enable && vsync_cntrl.disabled_clocks) {
-		outp32(MDP_INTR_CLEAR, LCDC_FRAME_START);
-		mdp_intr_mask |= LCDC_FRAME_START;
-		outp32(MDP_INTR_ENABLE, mdp_intr_mask);
-		mdp_enable_irq(MDP_VSYNC_TERM);
-		vsync_cntrl.disabled_clocks = 0;
-	}
-	spin_unlock_irqrestore(&mdp_spin_lock, flag);
- 
-	if (vsync_cntrl.vsync_irq_enabled &&
-		atomic_read(&vsync_cntrl.suspend) == 0)
-		atomic_set(&vsync_cntrl.vsync_resume, 1);
-}
-#else	// Origin.
-void mdp_dma_lcdc_vsync_ctrl(int enable)
-{
-	unsigned long flag;
-	int disabled_clocks;
-	if (vsync_cntrl.vsync_irq_enabled == enable)
-		return;
-
-	spin_lock_irqsave(&mdp_spin_lock, flag);
 	if (!enable)
-		INIT_COMPLETION(vsync_cntrl.vsync_wait);
-
-	vsync_cntrl.vsync_irq_enabled = enable;
+		vsync_cntrl.disabled_clocks = 0;
 	disabled_clocks = vsync_cntrl.disabled_clocks;
 	spin_unlock_irqrestore(&mdp_spin_lock, flag);
 
-	if (enable && disabled_clocks)
+	if (enable && disabled_clocks) {
 		mdp_pipe_ctrl(MDP_CMD_BLOCK, MDP_BLOCK_POWER_ON, FALSE);
-
-	spin_lock_irqsave(&mdp_spin_lock, flag);
-	if (enable && vsync_cntrl.disabled_clocks) {
+		spin_lock_irqsave(&mdp_spin_lock, flag);
 		outp32(MDP_INTR_CLEAR, LCDC_FRAME_START);
 		mdp_intr_mask |= LCDC_FRAME_START;
 		outp32(MDP_INTR_ENABLE, mdp_intr_mask);
 		mdp_enable_irq(MDP_VSYNC_TERM);
-		vsync_cntrl.disabled_clocks = 0;
+		spin_unlock_irqrestore(&mdp_spin_lock, flag);
 	}
-	spin_unlock_irqrestore(&mdp_spin_lock, flag);
 
 	if (vsync_cntrl.vsync_irq_enabled &&
 		atomic_read(&vsync_cntrl.suspend) == 0)
 		atomic_set(&vsync_cntrl.vsync_resume, 1);
 }
-#endif
-// QCT_PATCH_E, SR#01031271 bohyun.jung@lge.com
 
 void mdp_lcdc_update(struct msm_fb_data_type *mfd)
 {

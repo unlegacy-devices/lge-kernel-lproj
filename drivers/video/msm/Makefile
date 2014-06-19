@@ -14,7 +14,6 @@ obj-$(CONFIG_DEBUG_FS) += mdp_debugfs.o
 
 ifeq ($(CONFIG_FB_MSM_MDP40),y)
 obj-y += mdp4_util.o
-obj-y += mdp4_hsic.o
 else
 obj-y += mdp_hw_init.o
 obj-y += mdp_ppp.o
@@ -83,6 +82,7 @@ obj-$(CONFIG_FB_MSM_MIPI_DSI_RENESAS) += mipi_renesas.o
 obj-$(CONFIG_FB_MSM_MIPI_DSI_TRULY) += mipi_truly.o
 obj-$(CONFIG_FB_MSM_MIPI_DSI_NT35510) += mipi_NT35510.o
 obj-$(CONFIG_FB_MSM_MIPI_DSI_NT35516) += mipi_truly_tft540960_1_e.o
+obj-$(CONFIG_FB_MSM_MIPI_DSI_NT35590) += mipi_NT35590.o
 obj-$(CONFIG_FB_MSM_MIPI_DSI_SIMULATOR) += mipi_simulator.o
 #LGE_CHANGE_S : seven.kim@lge.com kernel3.0 porting
 obj-$(CONFIG_FB_MSM_MIPI_DSI_LG4573B) += mipi_lg4573b.o
@@ -136,6 +136,7 @@ obj-y += mipi_orise_video_720p_pt.o mipi_orise_cmd_720p_pt.o
 obj-y += mipi_renesas_video_fwvga_pt.o mipi_renesas_cmd_fwvga_pt.o
 obj-y += mipi_NT35510_video_wvga_pt.o mipi_NT35510_cmd_wvga_pt.o
 obj-y += mipi_truly_tft540960_1_e_video_qhd_pt.o mipi_truly_tft540960_1_e_cmd_qhd_pt.o
+obj-y += mipi_NT35590_cmd_720p_pt.o mipi_NT35590_video_720p_pt.o
 obj-y += mipi_chimei_wxga_pt.o
 obj-y += mipi_chimei_wuxga.o
 obj-y += mipi_truly_video_wvga_pt.o
@@ -159,11 +160,13 @@ obj-$(CONFIG_FB_MSM_MIPI_NT35516_VIDEO_QHD_PT) += mipi_truly_tft540960_1_e_video
 obj-$(CONFIG_FB_MSM_MIPI_ILI9486_VIDEO_HVGA_PT) += mipi_ili9486_video_hvga_pt.o
 obj-$(CONFIG_FB_MSM_MIPI_ILI9486_CMD_HVGA_PT) += mipi_ili9486_cmd_hvga_pt.o
 #LGE_CHANGE_E : sohyun.nam@lge.com ,2012-10-17
+obj-$(CONFIG_FB_MSM_MIPI_NT35590_CMD_720P_PT) += mipi_NT35590_cmd_720p_pt.o
+obj-$(CONFIG_FB_MSM_MIPI_NT35590_VIDEO_720P_PT) += mipi_NT35590_video_720p_pt.o
 obj-$(CONFIG_FB_MSM_MIPI_SIMULATOR_VIDEO) += mipi_simulator_video.o
 obj-$(CONFIG_FB_MSM_MIPI_CHIMEI_WXGA) += mipi_chimei_wxga_pt.o
 obj-$(CONFIG_FB_MSM_MIPI_CHIMEI_WUXGA) += mipi_chimei_wuxga.o
 #LGE_CHANGE_S : seven.kim@lge.com kernel3.0 porting
-obj-$(CONFIG_FB_MSM_MIPI_LG4573B_VIDEO_WVGA_PT) += mipi_lg4573b_video_wvga_pt.o
++obj-$(CONFIG_FB_MSM_MIPI_LG4573B_VIDEO_WVGA_PT) += mipi_lg4573b_video_wvga_pt.o
 #LGE_CHANGE_E : seven.kim@lge.com kernel3.0 porting
 #LGE_CHANGE_S : sohyun.nam@lge.com ,2012-12-20
 obj-$(CONFIG_FB_MSM_MIPI_HX8379A_VIDEO_WVGA_PT) += mipi_hx8379a_video_wvga_pt.o

@@ -376,7 +376,7 @@ void cont_splash_clk_ctrl(int enable)
 	}
 }
 
-void mipi_dsi_prepare_clocks(void)
+void mipi_dsi_prepare_ahb_clocks(void)
 {
 	clk_prepare(dsi_ref_clk);
 	clk_prepare(ahb_m_clk);
@@ -389,10 +389,8 @@ void mipi_dsi_prepare_clocks(void)
 	clk_prepare(dsi_pixel_clk);
 }
 
-void mipi_dsi_unprepare_clocks(void)
+void mipi_dsi_unprepare_ahb_clocks(void)
 {
-	clk_unprepare(dsi_esc_clk);
-	clk_unprepare(dsi_byte_div_clk);
 	clk_unprepare(mdp_dsi_pclk);
 	clk_unprepare(ebi1_dsi_clk);
 	clk_unprepare(ahb_m_clk);
@@ -400,6 +398,12 @@ void mipi_dsi_unprepare_clocks(void)
 	clk_unprepare(dsi_ref_clk);
 	clk_unprepare(dsi_clk);
 	clk_unprepare(dsi_pixel_clk);
+}
+
+void mipi_dsi_unprepare_clocks(void)
+{
+	clk_unprepare(dsi_esc_clk);
+	clk_unprepare(dsi_byte_div_clk);
 }
 
 void mipi_dsi_ahb_ctrl(u32 enable)
