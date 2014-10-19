@@ -885,6 +885,12 @@ static int __devinit mipi_ili9486_lcd_probe(struct platform_device *pdev)
 	return 0;
 }
 
+static int mipi_ili9486_check_live_status(struct msm_fb_data_type *mfd)
+{
+	return mipi_dsi_wait_for_bta_ack();
+}
+
+
 static struct platform_driver this_driver = {
 	.probe  = mipi_ili9486_lcd_probe,
 	.driver = {
@@ -895,6 +901,7 @@ static struct platform_driver this_driver = {
 static struct msm_fb_panel_data ili9486_panel_data = {
 	.on		= mipi_ili9486_lcd_on,
 	.off	= mipi_ili9486_lcd_off,
+	.check_live_status = mipi_ili9486_check_live_status,
 };
 
 static int ch_used[3];
