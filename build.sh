@@ -265,7 +265,7 @@ then
 	# Main Variables
 	custom_kernel=LProj-CAFKernel
 	builder=TeamHackLG
-	custom_kernel_branch=LP
+	custom_kernel_branch=MM
 	ARCH=arm
 
 	while true
