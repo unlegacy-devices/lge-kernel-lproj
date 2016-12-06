@@ -1,0 +1,75 @@
+sudo: false
+language: c
+cache: ccache
+script:
+# Travis CI Script by Caio Oliveira aka Caio99BR <caiooliveirafarias0@gmail.com>
+
+# Download all necessary things
+- curl -sL https://raw.github.com/gist/1708408/travis.rb > ~/bin/travis-ci && chmod +x ~/bin/travis-ci
+- gem install hub | tail -2
+- ruby -e 'require "json"' 2>/dev/null || gem install json
+
+# Clone necessary things
+- git clone -b "google_gcc" "https://github.com/TeamVee/android_prebuilt_toolchains" "android_prebuilt_toolchains"
+- git clone -b "android-msm-3.4-kk" "https://github.com/TeamHackLG/lge-kernel-lproj" "lge-kernel-lproj-kk"
+- git clone -b "android-msm-3.4-mm" "https://github.com/TeamHackLG/lge-kernel-lproj" "lge-kernel-lproj-mm"
+
+#####
+
+- cd lge-kernel-lproj-kk/
+- travis lge-kernel-lproj-kk
+
+##### THE CORE STRIPPED OF .travis.yml FROM KK BRANCH
+- source build.sh <<< "1q"
+- patch -p1 < ./zip-creator/travis-ci/0001-TravisCI-Custom-Patches.patch
+- export ndevicechoice="1"
+- source build.sh <<< "23${ndevicechoice}4167q"
+- export ndevicechoice="2"
+- source build.sh <<< "23${ndevicechoice}4167q"
+- export ndevicechoice="3"
+- source build.sh <<< "23${ndevicechoice}4167q"
+- export ndevicechoice="4"
+- source build.sh <<< "23${ndevicechoice}4167q"
+- export ndevicechoice="5"
+- source build.sh <<< "23${ndevicechoice}4167q"
+- export ndevicechoice="6"
+- source build.sh <<< "23${ndevicechoice}4167q"
+- export ndevicechoice="7"
+- source build.sh <<< "23${ndevicechoice}4167q"
+#####
+
+- cd ../
+- cd lge-kernel-lproj-mm/
+- travis lge-kernel-lproj-mm
+
+##### THE CORE STRIPPED OF .travis.yml FROM MM BRANCH
+- source build.sh <<< "1q"
+- patch -p1 < ./zip-creator/travis-ci/0001-TravisCI-Custom-Patches.patch
+- export ndevicechoice="1"
+- source build.sh <<< "23${ndevicechoice}4167q"
+- export ndevicechoice="2"
+- source build.sh <<< "23${ndevicechoice}4167q"
+- export ndevicechoice="3"
+- source build.sh <<< "23${ndevicechoice}4167q"
+- export ndevicechoice="4"
+- source build.sh <<< "23${ndevicechoice}4167q"
+- export ndevicechoice="5"
+- source build.sh <<< "23${ndevicechoice}4167q"
+- export ndevicechoice="6"
+- source build.sh <<< "23${ndevicechoice}4167q"
+- export ndevicechoice="7"
+- source build.sh <<< "23${ndevicechoice}4167q"
+#####
+
+- cd ../
+deploy:
+  provider: releases
+  skip_cleanup: true
+  api_key:
+    secure: "nni61sJP8PC5G90TAYKg7Ztmb89VlcrSbh+/I6An+rFsKEJrpuzXtV2qB5TPB1pZHKjqHFMhfGWhTpRVXX+yQPJpHUp/Zde+Gb58N0vnTDCRMm7kiPSgTLKGnPFri3MzeTVFUezdikTYS+htunZu8AWPww1QP8Ww+3oJ2K5+rb8="
+  file_glob: true
+  file:
+    - "lge-kernel-lproj-kk/zip-creator/*.zip"
+    - "lge-kernel-lproj-mm/zip-creator/*.zip"
+  on:
+    tags: true
