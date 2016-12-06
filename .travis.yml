@@ -4,14 +4,7 @@ cache: ccache
 script:
 # Travis CI Script by Caio Oliveira aka Caio99BR <caiooliveirafarias0@gmail.com>
 
-# Download all necessary things
-- gem install travis -v 1.8.4 --no-rdoc --no-ri
-- mkdir ~/bin && export PATH=~/bin:$PATH
-- curl -sL https://raw.github.com/gist/1708408/travis.rb > ~/bin/travis-ci && chmod +x ~/bin/travis-ci
-- gem install hub | tail -2
-- ruby -e 'require "json"' 2>/dev/null || gem install json
-
-# Clone necessary things
+# Clone all necessary things
 - git clone --single-branch -b "google_gcc" "https://github.com/TeamVee/android_prebuilt_toolchains" "android_prebuilt_toolchains"
 - git clone --single-branch -b "android-msm-3.4-kk" "https://github.com/TeamHackLG/lge-kernel-lproj" "lge-kernel-lproj-kk"
 - git clone --single-branch -b "android-msm-3.4-mm" "https://github.com/TeamHackLG/lge-kernel-lproj" "lge-kernel-lproj-mm"
@@ -19,7 +12,6 @@ script:
 #####
 
 - cd lge-kernel-lproj-kk/
-- travis lge-kernel-lproj-kk
 
 ##### THE CORE STRIPPED OF .travis.yml FROM KK BRANCH
 - source build.sh <<< "1q"
@@ -61,7 +53,6 @@ script:
 
 - cd ../
 - cd lge-kernel-lproj-mm/
-- travis lge-kernel-lproj-mm
 
 ##### THE CORE STRIPPED OF .travis.yml FROM MM BRANCH
 - source build.sh <<< "1q"
