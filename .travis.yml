@@ -22,6 +22,25 @@ script:
 ##### THE CORE STRIPPED OF .travis.yml FROM KK BRANCH
 - source build.sh <<< "1q"
 - patch -p1 < ./zip-creator/travis-ci/0001-TravisCI-Custom-Patches.patch
+
+# Normal
+- export ndevicechoice="1"
+- source build.sh <<< "23${ndevicechoice}4167q"
+- export ndevicechoice="2"
+- source build.sh <<< "23${ndevicechoice}4167q"
+- export ndevicechoice="3"
+- source build.sh <<< "23${ndevicechoice}4167q"
+- export ndevicechoice="4"
+- source build.sh <<< "23${ndevicechoice}4167q"
+- export ndevicechoice="5"
+- source build.sh <<< "23${ndevicechoice}4167q"
+- export ndevicechoice="6"
+- source build.sh <<< "23${ndevicechoice}4167q"
+- export ndevicechoice="7"
+- source build.sh <<< "23${ndevicechoice}4167q"
+
+# Overclocked
+- patch -p1 < ../patchs/0001-LProj-CAFKernel-With-Over-Clock.patch
 - export ndevicechoice="1"
 - source build.sh <<< "23${ndevicechoice}4167q"
 - export ndevicechoice="2"
@@ -45,6 +64,25 @@ script:
 ##### THE CORE STRIPPED OF .travis.yml FROM MM BRANCH
 - source build.sh <<< "1q"
 - patch -p1 < ./zip-creator/travis-ci/0001-TravisCI-Custom-Patches.patch
+
+# Normal
+- export ndevicechoice="1"
+- source build.sh <<< "23${ndevicechoice}4167q"
+- export ndevicechoice="2"
+- source build.sh <<< "23${ndevicechoice}4167q"
+- export ndevicechoice="3"
+- source build.sh <<< "23${ndevicechoice}4167q"
+- export ndevicechoice="4"
+- source build.sh <<< "23${ndevicechoice}4167q"
+- export ndevicechoice="5"
+- source build.sh <<< "23${ndevicechoice}4167q"
+- export ndevicechoice="6"
+- source build.sh <<< "23${ndevicechoice}4167q"
+- export ndevicechoice="7"
+- source build.sh <<< "23${ndevicechoice}4167q"
+
+# Overclocked
+- patch -p1 < ../patchs/0001-LProj-CAFKernel-With-Over-Clock.patch
 - export ndevicechoice="1"
 - source build.sh <<< "23${ndevicechoice}4167q"
 - export ndevicechoice="2"
