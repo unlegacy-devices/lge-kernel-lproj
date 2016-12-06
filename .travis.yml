@@ -12,9 +12,9 @@ script:
 - ruby -e 'require "json"' 2>/dev/null || gem install json
 
 # Clone necessary things
-- git clone -b "google_gcc" "https://github.com/TeamVee/android_prebuilt_toolchains" "android_prebuilt_toolchains"
-- git clone -b "android-msm-3.4-kk" "https://github.com/TeamHackLG/lge-kernel-lproj" "lge-kernel-lproj-kk"
-- git clone -b "android-msm-3.4-mm" "https://github.com/TeamHackLG/lge-kernel-lproj" "lge-kernel-lproj-mm"
+- git clone --single-branch -b "google_gcc" "https://github.com/TeamVee/android_prebuilt_toolchains" "android_prebuilt_toolchains"
+- git clone --single-branch -b "android-msm-3.4-kk" "https://github.com/TeamHackLG/lge-kernel-lproj" "lge-kernel-lproj-kk"
+- git clone --single-branch -b "android-msm-3.4-mm" "https://github.com/TeamHackLG/lge-kernel-lproj" "lge-kernel-lproj-mm"
 
 #####
 
