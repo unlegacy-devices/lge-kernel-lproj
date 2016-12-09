@@ -1,0 +1,144 @@
+From 96699cf014e5ca62ec24a05b7fc348b57007a6cb Mon Sep 17 00:00:00 2001
+From: Caio Oliveira <caiooliveirafarias0@gmail.com>
+Date: Tue, 6 Dec 2016 12:52:17 -0200
+Subject: [PATCH 2/2] configs: Update MAX/MIN of 7x25/7x27 processors
+
+* L1II/L3II/L7 have a 7x27 procesor (1008MHz Max)
+* L5 have a 7x25 processor (800MHz Max)
+* Enable 7x25/7x27 processor overclock
+* Enable 7x27 processor crazy overclock
+
+Signed-off-by: Caio Oliveira <caiooliveirafarias0@gmail.com>
+---
+ arch/arm/configs/cyanogenmod_m4_defconfig       | 4 ++--
+ arch/arm/configs/cyanogenmod_m4_nonfc_defconfig | 4 ++--
+ arch/arm/configs/cyanogenmod_u0_8m_defconfig    | 7 ++++---
+ arch/arm/configs/cyanogenmod_u0_defconfig       | 7 ++++---
+ arch/arm/configs/cyanogenmod_u0_nonfc_defconfig | 7 ++++---
+ arch/arm/configs/cyanogenmod_v1_defconfig       | 7 ++++---
+ arch/arm/configs/cyanogenmod_vee3_defconfig     | 7 ++++---
+ 7 files changed, 24 insertions(+), 19 deletions(-)
+
+diff --git a/arch/arm/configs/cyanogenmod_m4_defconfig b/arch/arm/configs/cyanogenmod_m4_defconfig
+index cd9e36a..802a70c 100644
+--- a/arch/arm/configs/cyanogenmod_m4_defconfig
++++ b/arch/arm/configs/cyanogenmod_m4_defconfig
+@@ -461,8 +461,8 @@ CONFIG_MSM_DALRPC=y
+ # CONFIG_MSM_DALRPC_TEST is not set
+ CONFIG_MSM_CPU_FREQ_SET_MIN_MAX=y
+ CONFIG_MSM_CPU_FREQ_MAX=800000
+-CONFIG_MSM_CPU_FREQ_MIN=61440
+-# CONFIG_MSM7X27A_OVERCLOCK is not set
++CONFIG_MSM_CPU_FREQ_MIN=50000
++CONFIG_MSM7X27A_OVERCLOCK=y
+ # CONFIG_MSM_AVS_HW is not set
+ # CONFIG_MSM_HW3D is not set
+ CONFIG_MSM_ADSP=y
+diff --git a/arch/arm/configs/cyanogenmod_m4_nonfc_defconfig b/arch/arm/configs/cyanogenmod_m4_nonfc_defconfig
+index 6a89208..e5f5a09 100644
+--- a/arch/arm/configs/cyanogenmod_m4_nonfc_defconfig
++++ b/arch/arm/configs/cyanogenmod_m4_nonfc_defconfig
+@@ -461,8 +461,8 @@ CONFIG_MSM_DALRPC=y
+ # CONFIG_MSM_DALRPC_TEST is not set
+ CONFIG_MSM_CPU_FREQ_SET_MIN_MAX=y
+ CONFIG_MSM_CPU_FREQ_MAX=800000
+-CONFIG_MSM_CPU_FREQ_MIN=61440
+-# CONFIG_MSM7X27A_OVERCLOCK is not set
++CONFIG_MSM_CPU_FREQ_MIN=50000
++CONFIG_MSM7X27A_OVERCLOCK=y
+ # CONFIG_MSM_AVS_HW is not set
+ # CONFIG_MSM_HW3D is not set
+ CONFIG_MSM_ADSP=y
+diff --git a/arch/arm/configs/cyanogenmod_u0_8m_defconfig b/arch/arm/configs/cyanogenmod_u0_8m_defconfig
+index eafd6ad..a08a65a 100644
+--- a/arch/arm/configs/cyanogenmod_u0_8m_defconfig
++++ b/arch/arm/configs/cyanogenmod_u0_8m_defconfig
+@@ -459,9 +459,10 @@ CONFIG_MSM_RMT_STORAGE_CLIENT=y
+ CONFIG_MSM_DALRPC=y
+ # CONFIG_MSM_DALRPC_TEST is not set
+ CONFIG_MSM_CPU_FREQ_SET_MIN_MAX=y
+-CONFIG_MSM_CPU_FREQ_MAX=1008000
+-CONFIG_MSM_CPU_FREQ_MIN=61440
+-# CONFIG_MSM7X27A_OVERCLOCK is not set
++CONFIG_MSM_CPU_FREQ_MAX=1000000
++CONFIG_MSM_CPU_FREQ_MIN=50000
++CONFIG_MSM7X27A_OVERCLOCK=y
++CONFIG_MSM7X27A_CRAZYOVERCLOCK=y
+ # CONFIG_MSM_AVS_HW is not set
+ # CONFIG_MSM_HW3D is not set
+ CONFIG_MSM_ADSP=y
+diff --git a/arch/arm/configs/cyanogenmod_u0_defconfig b/arch/arm/configs/cyanogenmod_u0_defconfig
+index d96b658..dfab126 100644
+--- a/arch/arm/configs/cyanogenmod_u0_defconfig
++++ b/arch/arm/configs/cyanogenmod_u0_defconfig
+@@ -459,9 +459,10 @@ CONFIG_MSM_RMT_STORAGE_CLIENT=y
+ CONFIG_MSM_DALRPC=y
+ # CONFIG_MSM_DALRPC_TEST is not set
+ CONFIG_MSM_CPU_FREQ_SET_MIN_MAX=y
+-CONFIG_MSM_CPU_FREQ_MAX=1008000
+-CONFIG_MSM_CPU_FREQ_MIN=61440
+-# CONFIG_MSM7X27A_OVERCLOCK is not set
++CONFIG_MSM_CPU_FREQ_MAX=1000000
++CONFIG_MSM_CPU_FREQ_MIN=50000
++CONFIG_MSM7X27A_OVERCLOCK=y
++CONFIG_MSM7X27A_CRAZYOVERCLOCK=y
+ # CONFIG_MSM_AVS_HW is not set
+ # CONFIG_MSM_HW3D is not set
+ CONFIG_MSM_ADSP=y
+diff --git a/arch/arm/configs/cyanogenmod_u0_nonfc_defconfig b/arch/arm/configs/cyanogenmod_u0_nonfc_defconfig
+index cfe2c69..75ece88 100644
+--- a/arch/arm/configs/cyanogenmod_u0_nonfc_defconfig
++++ b/arch/arm/configs/cyanogenmod_u0_nonfc_defconfig
+@@ -459,9 +459,10 @@ CONFIG_MSM_RMT_STORAGE_CLIENT=y
+ CONFIG_MSM_DALRPC=y
+ # CONFIG_MSM_DALRPC_TEST is not set
+ CONFIG_MSM_CPU_FREQ_SET_MIN_MAX=y
+-CONFIG_MSM_CPU_FREQ_MAX=1008000
+-CONFIG_MSM_CPU_FREQ_MIN=61440
+-# CONFIG_MSM7X27A_OVERCLOCK is not set
++CONFIG_MSM_CPU_FREQ_MAX=1000000
++CONFIG_MSM_CPU_FREQ_MIN=50000
++CONFIG_MSM7X27A_OVERCLOCK=y
++CONFIG_MSM7X27A_CRAZYOVERCLOCK=y
+ # CONFIG_MSM_AVS_HW is not set
+ # CONFIG_MSM_HW3D is not set
+ CONFIG_MSM_ADSP=y
+diff --git a/arch/arm/configs/cyanogenmod_v1_defconfig b/arch/arm/configs/cyanogenmod_v1_defconfig
+index 7ba639b2..c584eec 100755
+--- a/arch/arm/configs/cyanogenmod_v1_defconfig
++++ b/arch/arm/configs/cyanogenmod_v1_defconfig
+@@ -464,9 +464,10 @@ CONFIG_MSM_RMT_STORAGE_CLIENT=y
+ CONFIG_MSM_DALRPC=y
+ # CONFIG_MSM_DALRPC_TEST is not set
+ CONFIG_MSM_CPU_FREQ_SET_MIN_MAX=y
+-CONFIG_MSM_CPU_FREQ_MAX=1008000
+-CONFIG_MSM_CPU_FREQ_MIN=61440
+-# CONFIG_MSM7X27A_OVERCLOCK is not set
++CONFIG_MSM_CPU_FREQ_MAX=1000000
++CONFIG_MSM_CPU_FREQ_MIN=50000
++CONFIG_MSM7X27A_OVERCLOCK=y
++CONFIG_MSM7X27A_CRAZYOVERCLOCK=y
+ # CONFIG_MSM_AVS_HW is not set
+ # CONFIG_MSM_HW3D is not set
+ CONFIG_MSM_ADSP=y
+diff --git a/arch/arm/configs/cyanogenmod_vee3_defconfig b/arch/arm/configs/cyanogenmod_vee3_defconfig
+index 97070e1..3278781 100755
+--- a/arch/arm/configs/cyanogenmod_vee3_defconfig
++++ b/arch/arm/configs/cyanogenmod_vee3_defconfig
+@@ -463,9 +463,10 @@ CONFIG_MSM_RMT_STORAGE_CLIENT=y
+ CONFIG_MSM_DALRPC=y
+ # CONFIG_MSM_DALRPC_TEST is not set
+ CONFIG_MSM_CPU_FREQ_SET_MIN_MAX=y
+-CONFIG_MSM_CPU_FREQ_MAX=1008000
+-CONFIG_MSM_CPU_FREQ_MIN=61440
+-# CONFIG_MSM7X27A_OVERCLOCK is not set
++CONFIG_MSM_CPU_FREQ_MAX=1000000
++CONFIG_MSM_CPU_FREQ_MIN=50000
++CONFIG_MSM7X27A_OVERCLOCK=y
++CONFIG_MSM7X27A_CRAZYOVERCLOCK=y
+ # CONFIG_MSM_AVS_HW is not set
+ # CONFIG_MSM_HW3D is not set
+ CONFIG_MSM_ADSP=y
+-- 
+2.10.1
+

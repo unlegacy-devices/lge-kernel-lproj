@@ -1,0 +1,26 @@
+From a293b94d494691bdba3b07e588b19d51ddfd5e9b Mon Sep 17 00:00:00 2001
+From: Caio Oliveira <caiooliveirafarias0@gmail.com>
+Date: Tue, 6 Dec 2016 12:48:48 -0200
+Subject: build.sh: Change to KK WithOverClock
+
+Signed-off-by: Caio Oliveira <caiooliveirafarias0@gmail.com>
+---
+ build.sh | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/build.sh b/build.sh
+index a8611e4..8e78f3b 100755
+--- a/build.sh
++++ b/build.sh
+@@ -265,7 +265,7 @@ then
+ 	# Main Variables
+ 	custom_kernel=LProj-CAFKernel
+ 	builder=TeamHackLG
+-	custom_kernel_branch=KK
++	custom_kernel_branch=KK-WOC
+ 	ARCH=arm
+ 
+ 	while true
+-- 
+2.10.1
+

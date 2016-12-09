@@ -34,7 +34,9 @@ script:
 - source build.sh <<< "23${ndevicechoice}4167q"
 
 # Overclocked
-- patch -p1 < ../patchs/0001-LProj-CAFKernel-With-Over-Clock.patch
+- patch -p1 < ../patchs/0000-build.sh-Change-to-KK-WithOverClock.patch
+- patch -p1 < ../patchs/0001-acpuclock-7627-Update-7x25-7x27-clock.patch
+- patch -p1 < ../patchs/0002-configs-Update-MAX-MIN-of-7x25-7x27-processors.patch
 - export ndevicechoice="1"
 - source build.sh <<< "23${ndevicechoice}4167q"
 - export ndevicechoice="2"
@@ -75,7 +77,9 @@ script:
 - source build.sh <<< "23${ndevicechoice}4167q"
 
 # Overclocked
-- patch -p1 < ../patchs/0001-LProj-CAFKernel-With-Over-Clock.patch
+- patch -p1 < ../patchs/0000-build.sh-Change-to-MM-WithOverClock.patch
+- patch -p1 < ../patchs/0001-acpuclock-7627-Update-7x25-7x27-clock.patch
+- patch -p1 < ../patchs/0002-configs-Update-MAX-MIN-of-7x25-7x27-processors.patch
 - export ndevicechoice="1"
 - source build.sh <<< "23${ndevicechoice}4167q"
 - export ndevicechoice="2"
