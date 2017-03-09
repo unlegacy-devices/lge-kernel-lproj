@@ -16,19 +16,19 @@ clear
 # Devices available
 #
 # L1 II
-device_variants_1="E410 E411 E415 E420" device_defconfig_1="cyanogenmod_v1_defconfig" device_name_1="LG-L1II"
+device_variants_1="E410 E411 E415 E420" device_defconfig_1="lineage_v1_defconfig" device_name_1="LG-L1II"
 # L3 II
-device_variants_2="E425 E430 E431 E435" device_defconfig_2="cyanogenmod_vee3_defconfig" device_name_2="LG-L3II"
+device_variants_2="E425 E430 E431 E435" device_defconfig_2="lineage_vee3_defconfig" device_name_2="LG-L3II"
 # L5
-device_variants_3="E610" device_defconfig_3="cyanogenmod_m4_defconfig" device_name_3="LG-L5-NFC"
+device_variants_3="E610" device_defconfig_3="lineage_m4_defconfig" device_name_3="LG-L5-NFC"
 # L5 NoNFC
-device_variants_4="E612 E617" device_defconfig_4="cyanogenmod_m4_nonfc_defconfig" device_name_4="LG-L5-NoNFC"
+device_variants_4="E612 E617" device_defconfig_4="lineage_m4_nonfc_defconfig" device_name_4="LG-L5-NoNFC"
 # L7
-device_variants_5="P700" device_defconfig_5="cyanogenmod_u0_defconfig" device_name_5="LG-L7-NFC"
+device_variants_5="P700" device_defconfig_5="lineage_u0_defconfig" device_name_5="LG-L7-NFC"
 # L7 NoNFC
-device_variants_6="P705" device_defconfig_6="cyanogenmod_u0_nonfc_defconfig" device_name_6="LG-L7-NoNFC"
+device_variants_6="P705" device_defconfig_6="lineage_u0_nonfc_defconfig" device_name_6="LG-L7-NoNFC"
 # L7 8m
-device_variants_7="P708" device_defconfig_7="cyanogenmod_u0_8m_defconfig" device_name_7="LG-L7-NFC-8m"
+device_variants_7="P708" device_defconfig_7="lineage_u0_8m_defconfig" device_name_7="LG-L7-NFC-8m"
 # Menu
 echo "${x} | ${color_green}Device choice${color_stock}"
 echo
