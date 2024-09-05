@@ -20,6 +20,7 @@ jobs:
         export KBUILD_BUILD_USER=notnoelchannel
         export KBUILD_BUILD_HOST=unlegacy-devices
         make -j22 ARCH=arm CROSS_COMPILE=/opt/toolchains/arm-eabi-4.4.3/ cyanogenmod_e0_defconfig
+        make oldconfig
         make -j12
     - name: Moving Output # CI only
       run: |
