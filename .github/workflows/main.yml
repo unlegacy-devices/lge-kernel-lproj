@@ -14,12 +14,12 @@ jobs:
     - name: Getting Toolchain
       run: |
         sudo apt-get install lib32z1 ccache autoconf gcc gcc-9
-        sudo git clone --depth 1 --branch master --single-branch https://github.com/STS-Dev-Team/arm-eabi-4.4.3 /opt/toolchains/arm-eabi-4.4.3/
+        sudo wget https://releases.linaro.org/components/toolchain/binaries/4.9-2016.02/arm-linux-gnueabihf/gcc-linaro-4.9-2016.02-x86_64_arm-linux-gnueabihf.tar.xz /opt/toolchains/linaro
     - name: Building Kernel
       run: |
         export KBUILD_BUILD_USER=notnoelchannel
         export KBUILD_BUILD_HOST=unlegacy-devices
-        make -j22 ARCH=arm cyanogenmod_m4_defconfig
+        make -j22 ARCH=arm CROSS_COMPILE=/opt/toolchains/linaro/bin/arm-eabi- cyanogenmod_m4_defconfig
         make oldconfig
         make -j12
     - name: Moving Output # CI only
