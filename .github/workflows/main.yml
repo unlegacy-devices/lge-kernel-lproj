@@ -20,7 +20,8 @@ jobs:
         export KBUILD_BUILD_USER=notnoelchannel
         export KBUILD_BUILD_HOST=unlegacy-devices
         export ARCH=arm 
-        export CROSS_COMPILE=/opt/toolchains/linaro/bin/arm-linux-gnueabihf-
+        export CROSS_COMPILE=/opt/toolchains/linaro/bin/arm-gnueabihf-
+        ls /opt/toolchains/linaro/bin
         make cyanogenmod_m4_defconfig
         make -j6
     - name: Moving Output # CI only
