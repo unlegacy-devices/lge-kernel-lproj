@@ -20,7 +20,7 @@ jobs:
     - name: Building Kernel
       run: |
         git clone https://github.com/unlegacy-devices/lge-kernel-lproj -b android-msm-3.0-jb kernel/lge/e400
-        cd kernel/lge/e40p
+        cd kernel/lge/e400
         export KBUILD_BUILD_USER=notnoelchannel
         export KBUILD_BUILD_HOST=unlegacy-devices
         export ARCH=arm 
