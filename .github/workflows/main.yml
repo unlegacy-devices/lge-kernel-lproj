@@ -15,13 +15,16 @@ jobs:
       run: |
         sudo apt-get install lib32z1 ccache autoconf gcc gcc-9
         sudo wget -P /opt/toolchains/linaro https://releases.linaro.org/components/toolchain/binaries/4.9-2016.02/arm-linux-gnueabihf/gcc-linaro-4.9-2016.02-x86_64_arm-linux-gnueabihf.tar.xz
+        cd /opt/toolchains/linaro
+        tar -xvf gcc-linaro-4.9-2016.02-x86_64_arm-linux-gnueabihf.tar.xz
     - name: Building Kernel
       run: |
+        git clone https://github.com/unlegacy-devices/lge-kernel-lproj -b android-msm-3.0-jb kernel/lge/e400
+        cd kernel/lge/e40p
         export KBUILD_BUILD_USER=notnoelchannel
         export KBUILD_BUILD_HOST=unlegacy-devices
         export ARCH=arm 
-        export CROSS_COMPILE=/opt/toolchains/linaro/bin/arm-gnueabihf-
-        ls /opt/toolchains/linaro/bin
+        export CROSS_COMPILE=/opt/toolchains/linaro/bin/arm-linux-gnueabihf-
         make cyanogenmod_m4_defconfig
         make -j6
     - name: Moving Output # CI only
